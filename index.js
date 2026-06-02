@@ -134,10 +134,25 @@ async function trackAndPostLeavingGames() {
         
         try {
             const response = await fetch(DISCORD_WEBHOOK_URL, {
-            console.error(`Discord Error: ${response.status}`);
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+            
+            if (!response.ok) {
+                console.error(`Discord Error: ${response.status}`);
+            } else {
+                console.log("Message successfully posted to Discord.");
+                // Save the list to memory so it doesn't trigger again until a change happens
+                fs.writeFileSync(memoryPath, currentListString, 'utf8');
+            }
+        } catch (discordErr) {
+            console.error("Failed to reach Discord:", discordErr);
         }
-    } catch (discordErr) {
-        console.error("Failed to reach Discord:", discordErr);
+    } else {
+        console.log("No changes detected in the master list. Skipping Discord post.");
     }
 }
 
