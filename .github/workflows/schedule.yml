@@ -1,35 +1,35 @@
 name: PS Plus Tracker Automation
 
 on:
-schedule:
-# Runs every 6 hours
-- cron: '0 */6 * * *'
-workflow_dispatch:
+  schedule:
+    # Runs every 6 hours
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
 
 jobs:
-check-and-post:
-runs-on: ubuntu-latest
-permissions:
-contents: write
+  check-and-post:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
-steps:
-  - name: Checkout Repository
-    uses: actions/checkout@v4
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-  - name: Setup Node.js
-    uses: actions/setup-node@v4
-    with:
-      node-version: '20'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
-  - name: Install Dependencies
-    run: npm install howlongtobeat csv-parse
+      - name: Install Dependencies
+        run: npm install howlongtobeat csv-parse
 
-  - name: Run Tracker Script
-    run: node index.js
+      - name: Run Tracker Script
+        run: node index.js
 
-  - name: Save Memory State
-    run: |
-      git config --global user.name 'GitHub Actions Bot'
-      git config --global user.email 'actions@github.com'
-      git add saved_list.json
-      git diff --quiet && git diff --staged --quiet || (git commit -m "Automated memory update" && git push)
+      - name: Save Memory State
+        run: |
+          git config --global user.name 'GitHub Actions Bot'
+          git config --global user.email 'actions@github.com'
+          git add saved_list.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Automated memory update" && git push)
