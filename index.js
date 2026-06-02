@@ -107,33 +107,33 @@ async function trackAndPostLeavingGames() {
         const embedFields = [];
 
         for (let j = 0; j < leavingGamesData.length && j < 25; j++) {
-            title: "Games Leaving PS Plus Soon",
-            url: "https://docs.google.com/spreadsheets/d/19RorxFhWc2lHocg4c9zrVssSwZq1u2nPcpTsAvzdJQw/edit#gid=353702390",
-            description: `Here are the games leaving PS+ on **${commonDate}**.`,
-            color: 16753920,
-            fields: embedFields,
-            footer: {
-                text: "HLTB Completionist Times • Data parsed from the Master List"
-            },
-            timestamp: new Date().toISOString()
-        }]
-    };
+            const game = leavingGamesData[j];
+            
+            embedFields.push({
+                name: `🎮 **${game.name}**`,
+                value: `• **Platform:** ${game.system}\n• **Tier:** ${game.tier}\n• **Metacritic:** ${game.mc}\n• **Completion:** ${game.time}`,
+                inline: false
+            });
+        }
 
-    console.log("Sending payload to Discord...");
-    
-    try {
-        const response = await fetch(DISCORD_WEBHOOK_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
+        const payload = {
+            content: `@everyone 🚨 **PS Plus Catalog Update!**\nHere are the games leaving PS+ on **${commonDate}**.`,
+            embeds: [{
+                title: "Games Leaving PS Plus Soon",
+                url: "https://docs.google.com/spreadsheets/d/19RorxFhWc2lHocg4c9zrVssSwZq1u2nPcpTsAvzdJQw/edit#gid=353702390",
+                color: 16753920,
+                fields: embedFields,
+                footer: {
+                    text: "HLTB Completionist Times • Data parsed from the Master List"
+                },
+                timestamp: new Date().toISOString()
+            }]
+        };
 
-        if (response.ok) {
-            console.log("Successfully posted to Discord!");
-            // Save the new list to memory so it doesn't trigger again tomorrow
-            fs.writeFileSync(memoryPath, currentListString);
-            console.log("Memory state updated.");
-        } else {
+        console.log("Sending payload to Discord...");
+        
+        try {
+            const response = await fetch(DISCORD_WEBHOOK_URL, {
             console.error(`Discord Error: ${response.status}`);
         }
     } catch (discordErr) {
