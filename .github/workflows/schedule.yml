@@ -1,20 +1,22 @@
-STREAMING_CHUNK: Configuring the GitHub Actions workflow name and triggers...
+STREAMING_CHUNK: Setting up the workflow name...
 
 name: PS Plus Tracker Automation
 
+STREAMING_CHUNK: Setting up workflow triggers...
+
 on:
 schedule:
-# This cron syntax runs the script every 6 hours automatically
+# Runs every 6 hours
 - cron: '0 */6 * * *'
-workflow_dispatch: # This allows you to click a "Run" button manually on GitHub
+workflow_dispatch:
 
-STREAMING_CHUNK: Defining the server environment and steps...
+STREAMING_CHUNK: Configuring job and permissions...
 
 jobs:
 check-and-post:
 runs-on: ubuntu-latest
 permissions:
-contents: write # Needed so the bot can save the memory file back to the repository
+contents: write
 
 steps:
   - name: Checkout Repository
@@ -25,18 +27,17 @@ steps:
     with:
       node-version: '20'
 
-  # STREAMING_CHUNK: Installing packages and running the script...
+  # STREAMING_CHUNK: Running node dependencies...
   - name: Install Dependencies
     run: npm install howlongtobeat csv-parse
 
   - name: Run Tracker Script
     run: node index.js
 
-  # STREAMING_CHUNK: Saving the memory state so it remembers for the next run...
+  # STREAMING_CHUNK: Updating memory state...
   - name: Save Memory State
     run: |
       git config --global user.name 'GitHub Actions Bot'
       git config --global user.email 'actions@github.com'
       git add saved_list.json
-      # Only commit and push if the file actually changed
       git diff --quiet && git diff --staged --quiet || (git commit -m "Automated memory update" && git push)
