@@ -1,42 +1,13 @@
-STREAMING_CHUNK: Configuring the GitHub Actions workflow name and triggers...
-
-name: PS Plus Tracker Automation
-
-on:
-schedule:
-# This cron syntax runs the script every 6 hours automatically
-- cron: '0 */6 * * *'
-workflow_dispatch: # This allows you to click a "Run" button manually on GitHub
-
-STREAMING_CHUNK: Defining the server environment and steps...
-
-jobs:
-check-and-post:
-runs-on: ubuntu-latest
-permissions:
-contents: write # Needed so the bot can save the memory file back to the repository
-
-steps:
-  - name: Checkout Repository
-    uses: actions/checkout@v4
-
-  - name: Setup Node.js
-    uses: actions/setup-node@v4
-    with:
-      node-version: '20'
-
-  # STREAMING_CHUNK: Installing packages and running the script...
-  - name: Install Dependencies
-    run: npm install howlongtobeat csv-parse
-
-  - name: Run Tracker Script
-    run: node index.js
-
-  # STREAMING_CHUNK: Saving the memory state so it remembers for the next run...
-  - name: Save Memory State
-    run: |
-      git config --global user.name 'GitHub Actions Bot'
-      git config --global user.email 'actions@github.com'
-      git add saved_list.json
-      # Only commit and push if the file actually changed
-      git diff --quiet && git diff --staged --quiet || (git commit -m "Automated memory update" && git push)
+{
+"name": "ps-plus-tracker",
+"version": "1.0.0",
+"description": "Automated tracker for games leaving PlayStation Plus with HowLongToBeat integration.",
+"main": "index.js",
+"scripts": {
+"start": "node index.js"
+},
+"dependencies": {
+"csv-parse": "^5.5.6",
+"howlongtobeat": "^1.6.0"
+}
+}
