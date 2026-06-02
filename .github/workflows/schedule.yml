@@ -1,16 +1,10 @@
-STREAMING_CHUNK: Setting up the workflow name...
-
 name: PS Plus Tracker Automation
-
-STREAMING_CHUNK: Setting up workflow triggers...
 
 on:
 schedule:
 # Runs every 6 hours
 - cron: '0 */6 * * *'
 workflow_dispatch:
-
-STREAMING_CHUNK: Configuring job and permissions...
 
 jobs:
 check-and-post:
@@ -27,14 +21,12 @@ steps:
     with:
       node-version: '20'
 
-  # STREAMING_CHUNK: Running node dependencies...
   - name: Install Dependencies
     run: npm install howlongtobeat csv-parse
 
   - name: Run Tracker Script
     run: node index.js
 
-  # STREAMING_CHUNK: Updating memory state...
   - name: Save Memory State
     run: |
       git config --global user.name 'GitHub Actions Bot'
