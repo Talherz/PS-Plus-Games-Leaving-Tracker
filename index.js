@@ -6,7 +6,7 @@ const fs = require('fs');
 const TEST_MODE = false; // Set to false so it doesn't spam during automation
 const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1511388561188847841/0KXQNm6MFZ7eTqZpvo5GgRfnKho0-uPlSzfbcLtgi0IAXdNlhbFjfh7OMB9vL3rYLKKW";
 
-// Google Sheets public CSV export link for the "Leaving Soon" tab (gid=353702390)
+// Google Sheets public CSV export link for the "Leaving Soon" tab
 const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/19RorxFhWc2lHocg4c9zrVssSwZq1u2nPcpTsAvzdJQw/export?format=csv&gid=353702390";
 
 const hltbService = new HowLongToBeatService();
@@ -24,23 +24,19 @@ async function trackAndPostLeavingGames() {
         return;
     }
 
-    // Parse the CSV into an array of arrays
-    const rows = parse(csvData, {
-        skip_empty_lines: true
-    });
-
+    const rows = parse(csvData, { skip_empty_lines: true });
     const leavingGamesData = [];
     
-    // Map column indexes based on the spreadsheet architecture
+    // Updated mapping to include the sheet's completion time (Column L)
     const gameNameIdx = 0;   
     const systemIdx = 1;     
     const tierIdx = 2;       
     const leaveDateIdx = 5;  
     const metacriticIdx = 9; 
+    const completionIdx = 11; 
 
-    console.log("Querying HowLongToBeat for completionist times...");
+    console.log("Processing games and querying HowLongToBeat...");
 
-    // Start at row 2 to skip the Title and Headers
     for (let i = 2; i < rows.length; i++) {
         const gameName = rows[i][gameNameIdx]?.trim();
         
@@ -49,27 +45,29 @@ async function trackAndPostLeavingGames() {
             const system = rows[i][systemIdx] || "N/A";
             const tier = rows[i][tierIdx] || "N/A";
             const metacritic = rows[i][metacriticIdx] || "N/A";
+            const sheetCompletion = rows[i][completionIdx];
             
             let hltbTime = "Unknown";
-            let rawTime = 9999; // Default high sorting value for unknown times
+            let rawTime = 9999; 
 
             try {
-                // Search HLTB for the game
+                // Try to search HLTB first
                 const hltbResults = await hltbService.search(gameName);
-                
-                // If results are found, take the first one (most relevant)
                 if (hltbResults && hltbResults.length > 0) {
-                    const bestMatch = hltbResults[0];
-                    // You can change 'gameplayCompletionist' to 'gameplayMainExtra' if you prefer
-                    const completionistHours = bestMatch.gameplayCompletionist; 
-                    
+                    const completionistHours = hltbResults[0].gameplayCompletionist; 
                     if (completionistHours > 0) {
                         hltbTime = `${completionistHours} hrs`;
                         rawTime = completionistHours;
                     }
                 }
             } catch (err) {
-                console.log(`HLTB Search failed for ${gameName}`);
+                console.log(`HLTB Search failed for ${gameName}, falling back to sheet data...`);
+            }
+
+            // Fallback: If HLTB gets blocked or fails, use the time from the Google Sheet
+            if (hltbTime === "Unknown" && sheetCompletion && sheetCompletion.trim() !== "") {
+                hltbTime = `${sheetCompletion} hrs`;
+                rawTime = parseFloat(sheetCompletion) || 9999;
             }
 
             leavingGamesData.push({
@@ -84,24 +82,18 @@ async function trackAndPostLeavingGames() {
         }
     }
 
-    if (leavingGamesData.length === 0) {
-        console.log("No leaving games found.");
-        return;
-    }
+    if (leavingGamesData.length === 0) return;
 
-    // Sort games by our raw HLTB time (ascending)
     leavingGamesData.sort((a, b) => a.timeRaw - b.timeRaw);
 
     const currentListString = JSON.stringify(leavingGamesData);
     const memoryPath = './saved_list.json';
     let savedListString = "";
 
-    // If the memory file exists, read it
     if (fs.existsSync(memoryPath)) {
         savedListString = fs.readFileSync(memoryPath, 'utf8');
     }
 
-    // Only proceed if testing is forced OR the list of games has changed
     if (TEST_MODE || savedListString !== currentListString) {
         const commonDate = leavingGamesData[0].date !== "TBD" ? leavingGamesData[0].date : "an upcoming date";
         const embedFields = [];
@@ -111,7 +103,8 @@ async function trackAndPostLeavingGames() {
             
             embedFields.push({
                 name: `🎮 **${game.name}**`,
-                value: `• **Platform:** ${game.system}\n• **Tier:** ${game.tier}\n• **Metacritic:** ${game.mc}\n• **Completion:** ${game.time}`,
+                // Formatted so Metacritic and Completion share the same line
+                value: `• **Platform:** ${game.system}\n• **Tier:** ${game.tier}\n• **Metacritic:** ${game.mc} • **Completion:** ${game.time}`,
                 inline: false
             });
         }
@@ -130,14 +123,10 @@ async function trackAndPostLeavingGames() {
             }]
         };
 
-        console.log("Sending payload to Discord...");
-        
         try {
             const response = await fetch(DISCORD_WEBHOOK_URL, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
             
@@ -145,14 +134,13 @@ async function trackAndPostLeavingGames() {
                 console.error(`Discord Error: ${response.status}`);
             } else {
                 console.log("Message successfully posted to Discord.");
-                // Save the list to memory so it doesn't trigger again until a change happens
                 fs.writeFileSync(memoryPath, currentListString, 'utf8');
             }
         } catch (discordErr) {
             console.error("Failed to reach Discord:", discordErr);
         }
     } else {
-        console.log("No changes detected in the master list. Skipping Discord post.");
+        console.log("No changes detected. Skipping Discord post.");
     }
 }
 
