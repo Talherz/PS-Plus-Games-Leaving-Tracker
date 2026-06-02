@@ -9,6 +9,7 @@ const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/151138856118884784
 // Google Sheets public CSV export link for the "Leaving Soon" tab
 const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/19RorxFhWc2lHocg4c9zrVssSwZq1u2nPcpTsAvzdJQw/export?format=csv&gid=353702390";
 
+// Initialize the HowLongToBeat API Wrapper
 const hltbService = new HowLongToBeatService();
 
 async function trackAndPostLeavingGames() {
@@ -27,7 +28,6 @@ async function trackAndPostLeavingGames() {
     const rows = parse(csvData, { skip_empty_lines: true });
     const leavingGamesData = [];
     
-    // Updated mapping to include the sheet's completion time (Column L)
     const gameNameIdx = 0;   
     const systemIdx = 1;     
     const tierIdx = 2;       
@@ -35,7 +35,7 @@ async function trackAndPostLeavingGames() {
     const metacriticIdx = 9; 
     const completionIdx = 11; 
 
-    console.log("Processing games and querying HowLongToBeat...");
+    console.log("Processing games and querying HowLongToBeat API...");
 
     for (let i = 2; i < rows.length; i++) {
         const gameName = rows[i][gameNameIdx]?.trim();
@@ -50,23 +50,35 @@ async function trackAndPostLeavingGames() {
             let hltbTime = "Unknown";
             let rawTime = 9999; 
 
+            // 1. QUERY THE HOWLONGTOBEAT API
             try {
-                // Try to search HLTB first
-                const hltbResults = await hltbService.search(gameName);
+                // We split at " - " to remove long subtitles (e.g., "Scott Pilgrim - Complete Edition") 
+                // because the HLTB search engine frequently chokes on them.
+                const searchName = gameName.split(' - ')[0];
+                console.log(`Searching API for: ${searchName}`);
+                
+                const hltbResults = await hltbService.search(searchName);
+                
                 if (hltbResults && hltbResults.length > 0) {
-                    const completionistHours = hltbResults[0].gameplayCompletionist; 
-                    if (completionistHours > 0) {
-                        hltbTime = `${completionistHours} hrs`;
-                        rawTime = completionistHours;
+                    const topResult = hltbResults[0];
+                    
+                    if (topResult.gameplayCompletionist) {
+                        hltbTime = `${topResult.gameplayCompletionist} hrs`;
+                        rawTime = topResult.gameplayCompletionist;
+                    } else if (topResult.gameplayMainExtra) {
+                        // Fallback to Main + Extras if 100% time isn't logged
+                        hltbTime = `${topResult.gameplayMainExtra} hrs`;
+                        rawTime = topResult.gameplayMainExtra;
                     }
                 }
-            } catch (err) {
-                console.log(`HLTB Search failed for ${gameName}, falling back to sheet data...`);
+            } catch (apiError) {
+                console.error(`HLTB API failed for ${gameName}:`, apiError.message);
             }
 
-            // Fallback: If HLTB gets blocked or fails, use the time from the Google Sheet
+            // 2. THE SAFETY NET
+            // If the API returns nothing (or Cloudflare blocks it), fall back to the sheet's data
             if (hltbTime === "Unknown" && sheetCompletion && sheetCompletion.trim() !== "") {
-                hltbTime = `${sheetCompletion} hrs`;
+                hltbTime = `${sheetCompletion} hrs (Sheet)`; // Tagged so you know it was a fallback
                 rawTime = parseFloat(sheetCompletion) || 9999;
             }
 
@@ -79,11 +91,16 @@ async function trackAndPostLeavingGames() {
                 time: hltbTime,
                 timeRaw: rawTime
             });
+
+            // 3. THE ANTI-BOT THROTTLE
+            // Wait 2.5 seconds before querying the next game to prevent Cloudflare bans
+            await new Promise(resolve => setTimeout(resolve, 2500));
         }
     }
 
     if (leavingGamesData.length === 0) return;
 
+    // Sort games by completion time
     leavingGamesData.sort((a, b) => a.timeRaw - b.timeRaw);
 
     const currentListString = JSON.stringify(leavingGamesData);
@@ -117,7 +134,7 @@ async function trackAndPostLeavingGames() {
                 color: 16753920,
                 fields: embedFields,
                 footer: {
-                    text: "HLTB Completionist Times • Data parsed from the Master List"
+                    text: "HLTB Completionist Times • Data fetched via API & Master List"
                 },
                 timestamp: new Date().toISOString()
             }]
