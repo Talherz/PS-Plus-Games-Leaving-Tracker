@@ -19,19 +19,19 @@ async function runTracker() {
 
     let leavingGamesData = [];
     
-    // Starting loop at index 2 to skip headers[cite: 2]
+    // Starting loop at index 2 to skip headers
     for (let i = 2; i < records.length; i++) {
       const row = records[i];
-      const gameName = row[0]; // Column A[cite: 2]
+      const gameName = row[0]; // Column A
       
       if (gameName && gameName.trim() !== "") {
-        const system = row[1] ? row[1].trim() : "N/A";     // Column B[cite: 2]
-        const tier = row[2] ? row[2].trim() : "N/A";       // Column C[cite: 2]
-        const rawLeaveDate = row[5] ? row[5].trim() : "TBD"; // Column F[cite: 2]
-        const metacritic = row[9] ? row[9].trim() : "N/A"; // Column J[cite: 2]
-        const rawCompletion = row[11] ? row[11].trim() : ""; // Column L[cite: 2]
+        const system = row[1] ? row[1].trim() : "N/A";     // Column B
+        const tier = row[2] ? row[2].trim() : "N/A";       // Column C
+        const rawLeaveDate = row[5] ? row[5].trim() : "TBD"; // Column F
+        const metacritic = row[9] ? row[9].trim() : "N/A"; // Column J
+        const rawCompletion = row[11] ? row[11].trim() : ""; // Column L
 
-        // Format Date String to match 'MMM dd, yyyy'[cite: 2]
+        // Format Date String to match 'MMM dd, yyyy'
         let leaveDate = "TBD";
         if (rawLeaveDate && rawLeaveDate !== "TBD") {
           const d = new Date(rawLeaveDate);
@@ -42,7 +42,7 @@ async function runTracker() {
           }
         }
         
-        const completion = rawCompletion ? `${rawCompletion} hrs` : "Unknown";[cite: 2]
+        const completion = rawCompletion ? `${rawCompletion} hrs` : "Unknown";
 
         leavingGamesData.push({
           name: gameName.trim(),
@@ -58,7 +58,7 @@ async function runTracker() {
     
     if (leavingGamesData.length === 0) return;
 
-    // Replicate sorting logic ascending based on raw hours[cite: 2]
+    // Replicate sorting logic ascending based on raw hours
     leavingGamesData.sort((a, b) => {
       const timeA = parseFloat(a.timeRaw);
       const timeB = parseFloat(b.timeRaw);
@@ -80,37 +80,37 @@ async function runTracker() {
     const currentListString = JSON.stringify(leavingGamesData);
     let savedListString = "";
     
-    // Check local file state instead of Google PropertiesService[cite: 2]
+    // Check local file state instead of Google PropertiesService
     if (fs.existsSync('saved_list.json')) {
       savedListString = fs.readFileSync('saved_list.json', 'utf8');
     }
     
     if (TEST_MODE || savedListString !== currentListString) {
       
-      const commonDate = leavingGamesData.length > 0 ? leavingGamesData[0].date : "TBD";[cite: 2]
+      const commonDate = leavingGamesData.length > 0 ? leavingGamesData[0].date : "TBD";
       let embedFields = [];
       
       for (let j = 0; j < leavingGamesData.length && j < 25; j++) {
         const game = leavingGamesData[j];
         embedFields.push({
-          "name": "**" + game.name + "**",[cite: 2]
-          "value": "Platform: " + game.system + " • Tier: " + game.tier + "\nMetacritic: " + game.mc + " • Completion: " + game.time,[cite: 2]
+          "name": "**" + game.name + "**",
+          "value": "Platform: " + game.system + " • Tier: " + game.tier + "\nMetacritic: " + game.mc + " • Completion: " + game.time,
           "inline": false
         });
       }
 
       const payload = {
-        "content": "@everyone 🚨 **PS Plus Games Leaving Update!**",[cite: 2]
+        "content": "@everyone 🚨 **PS Plus Games Leaving Update!**",
         "embeds": [{
-          "title": "Games Leaving PS Plus Soon",[cite: 2]
-          "url": "https://docs.google.com/spreadsheets/d/19RorxFhWc2lHocg4c9zrVssSwZq1u2nPcpTsAvzdJQw/edit#gid=353702390",[cite: 2]
-          "description": "Here are the games leaving PS+ on **" + commonDate + "**.",[cite: 2]
-          "color": 16753920,[cite: 2]
-          "fields": embedFields,[cite: 2]
+          "title": "Games Leaving PS Plus Soon",
+          "url": "https://docs.google.com/spreadsheets/d/19RorxFhWc2lHocg4c9zrVssSwZq1u2nPcpTsAvzdJQw/edit#gid=353702390",
+          "description": "Here are the games leaving PS+ on **" + commonDate + "**.",
+          "color": 16753920,
+          "fields": embedFields,
           "footer": {
-            "text": "Data parsed automatically from the Master List"[cite: 2]
+            "text": "Data parsed automatically from the Master List"
           },
-          "timestamp": new Date().toISOString()[cite: 2]
+          "timestamp": new Date().toISOString()
         }]
       };
 
@@ -127,7 +127,7 @@ async function runTracker() {
         console.error(`Failed to post. Discord returned code: ${discordResponse.status}`);
       }
     } else {
-      console.log("No new updates to the sheet. No message sent.");[cite: 2]
+      console.log("No new updates to the sheet. No message sent.");
     }
   } catch (err) {
     console.error("Fatal Operational Error:", err);
