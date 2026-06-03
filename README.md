@@ -1,4 +1,4 @@
-# 🎮 PS Plus Departure Tracker
+# 🎮 PS Plus Games Leaving Tracker
 
 An automated, serverless Node.js bot that monitors the PlayStation Plus catalog for games leaving the service, retrieves their completionist hours, and pushes perfectly formatted alerts directly to a Discord server.
 
