@@ -6,14 +6,14 @@ Built entirely on **GitHub Actions**, this script runs on a scheduled cron job, 
 
 ## ✨ Features
 * **Serverless Automation:** Runs reliably in the background via GitHub Actions.
+* **Secure by Design:** Utilizes GitHub Secrets to inject environment variables at runtime, ensuring your private Discord Webhook URL is never exposed in the public codebase.
 * **Discord Webhook Integration:** Delivers clean, easily scannable embedded messages.
 * **Smart Memory State:** Uses a localized `saved_list.json` to remember previous runs, ensuring your Discord server is only pinged when new games are added to the departure list.
 * **Time-to-Beat Sorting:** Automatically sorts games by raw completion hours so players can prioritize their backlog.
-* **Date Formatting Engine:** Intercepts raw spreadsheet strings and standardizes them into readable departure dates.
 
 ## 🚀 How to Use This for Your Own Server
 
-You can easily fork this project and set it up for your own Discord community in less than 5 minutes.
+You can easily fork this project and set it up for your own Discord community in less than 5 minutes. Because this repository uses GitHub Secrets, your server details will remain completely private even if your forked repository is public!
 
 ### Prerequisites
 * A Discord server where you have permission to create Webhooks.
@@ -21,14 +21,17 @@ You can easily fork this project and set it up for your own Discord community in
 
 ### Setup Instructions
 
-1.  **Fork the Repository:** Click the "Fork" button at the top right of this page to copy this project to your own GitHub account.
+1.  **Fork the Repository:** * Click the "Fork" button at the top right of this page to copy this project to your own GitHub account.
 2.  **Create a Discord Webhook:**
     * Go to your Discord Server Settings > Integrations > Webhooks.
     * Click **New Webhook**, name it, choose the channel for alerts, and click **Copy Webhook URL**.
-3.  **Update the Script:**
-    * In your forked repository, open `index.js`.
-    * Replace `"YOUR_DISCORD_WEBHOOK_URL_HERE"` (around line 7) with the URL you just copied. 
-    * Commit the change.
+3.  **Configure GitHub Secrets (Security Step):**
+    * In your forked GitHub repository, click the **Settings** tab.
+    * On the left sidebar, scroll down to **Secrets and variables** and click **Actions**.
+    * Click the green **New repository secret** button.
+    * **Name:** Type exactly `DISCORD_WEBHOOK_URL`
+    * **Secret:** Paste the webhook URL you copied from Discord.
+    * Click **Add secret**.
 4.  **Activate GitHub Actions:**
     * Go to the **Actions** tab in your repository.
     * Click "I understand my workflows, go ahead and enable them."
