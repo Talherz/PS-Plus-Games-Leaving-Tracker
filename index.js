@@ -18,6 +18,9 @@ const CSV_URL = "https://docs.google.com/spreadsheets/d/19RorxFhWc2lHocg4c9zrVss
 async function runTracker() {
 try {
 const response = await fetch(CSV_URL);
+if (!response.ok) {
+  throw new Error(`Failed to fetch CSV: ${response.status} ${response.statusText}`);
+}
 const csvText = await response.text();
 
 const records = parse(csvText, {
@@ -151,4 +154,8 @@ process.exit(1);
 }
 }
 
-runTracker();
+if (require.main === module) {
+  runTracker();
+}
+
+module.exports = { runTracker };
