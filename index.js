@@ -13,11 +13,6 @@ if (!DISCORD_WEBHOOK_URL) {
   process.exit(1);
 }
 
-if (!DISCORD_WEBHOOK_URL.startsWith("https://discord.com/api/webhooks/") && !DISCORD_WEBHOOK_URL.startsWith("https://discordapp.com/api/webhooks/")) {
-  console.error("FATAL ERROR: Invalid Discord Webhook URL provided. Webhook URL must be a valid Discord Webhook URL.");
-  process.exit(1);
-}
-
 const CSV_URL = "https://docs.google.com/spreadsheets/d/19RorxFhWc2lHocg4c9zrVssSwZq1u2nPcpTsAvzdJQw/export?format=csv&gid=353702390";
 
 async function runTracker() {
@@ -35,7 +30,7 @@ let leavingGamesData = [];
 for (let i = 2; i < records.length; i++) {
   const row = records[i];
   const gameName = row[0]; // Column A
-
+  
   if (gameName && gameName.trim() !== "") {
     const system = row[1] ? row[1].trim() : "N/A";     // Column B
     const tier = row[2] ? row[2].trim() : "N/A";       // Column C
@@ -47,7 +42,7 @@ for (let i = 2; i < records.length; i++) {
     let leaveDate = "TBD";
     if (rawLeaveDate && rawLeaveDate !== "TBD") {
       const cleanDate = rawLeaveDate.trim();
-
+      
       // Regex checks if it is just "Month YYYY" (e.g., "Jun 2026" or "June 2026")
       if (/^[a-zA-Z]+ \d{4}$/.test(cleanDate)) {
         const parts = cleanDate.split(" ");
@@ -62,7 +57,7 @@ for (let i = 2; i < records.length; i++) {
         }
       }
     }
-
+    
     const completion = rawCompletion ? `${rawCompletion} hrs` : "Unknown";
 
     leavingGamesData.push({
@@ -83,16 +78,16 @@ if (leavingGamesData.length === 0) return;
 leavingGamesData.sort((a, b) => {
   const timeA = parseFloat(a.timeRaw);
   const timeB = parseFloat(b.timeRaw);
-
+  
   const isNumA = !isNaN(timeA);
   const isNumB = !isNaN(timeB);
-
+  
   if (isNumA && isNumB) {
     return timeA - timeB;
   } else if (isNumA && !isNumB) {
-    return -1;
+    return -1; 
   } else if (!isNumA && isNumB) {
-    return 1;
+    return 1;  
   } else {
     return 0;
   }
@@ -107,10 +102,10 @@ if (fs.existsSync('saved_list.json')) {
 }
 
 if (TEST_MODE || savedListString !== currentListString) {
-
+  
   const commonDate = leavingGamesData.length > 0 ? leavingGamesData[0].date : "TBD";
   let embedFields = [];
-
+  
   for (let j = 0; j < leavingGamesData.length && j < 25; j++) {
     const game = leavingGamesData[j];
     embedFields.push({
@@ -151,7 +146,7 @@ if (TEST_MODE || savedListString !== currentListString) {
   console.log("No new updates to the sheet. No message sent.");
 }
 } catch (err) {
-console.error("Fatal Operational Error:", err);
+console.error("Fatal Operational Error:", err.message);
 process.exit(1);
 }
 }
