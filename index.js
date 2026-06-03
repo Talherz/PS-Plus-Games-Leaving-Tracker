@@ -25,12 +25,13 @@ const records = parse(csvText, {
 });
 
 let leavingGamesData = [];
+const dateRegex = /^[a-zA-Z]+ \d{4}$/;
 
 // Starting loop at index 2 to skip headers
 for (let i = 2; i < records.length; i++) {
   const row = records[i];
   const gameName = row[0]; // Column A
-  
+
   if (gameName && gameName.trim() !== "") {
     const system = row[1] ? row[1].trim() : "N/A";     // Column B
     const tier = row[2] ? row[2].trim() : "N/A";       // Column C
@@ -42,9 +43,9 @@ for (let i = 2; i < records.length; i++) {
     let leaveDate = "TBD";
     if (rawLeaveDate && rawLeaveDate !== "TBD") {
       const cleanDate = rawLeaveDate.trim();
-      
+
       // Regex checks if it is just "Month YYYY" (e.g., "Jun 2026" or "June 2026")
-      if (/^[a-zA-Z]+ \d{4}$/.test(cleanDate)) {
+      if (dateRegex.test(cleanDate)) {
         const parts = cleanDate.split(" ");
         // Grab the first 3 letters of the month and force the 15th
         leaveDate = `${parts[0].substring(0, 3)} 15, ${parts[1]}`;
@@ -57,7 +58,7 @@ for (let i = 2; i < records.length; i++) {
         }
       }
     }
-    
+
     const completion = rawCompletion ? `${rawCompletion} hrs` : "Unknown";
 
     leavingGamesData.push({
@@ -78,16 +79,16 @@ if (leavingGamesData.length === 0) return;
 leavingGamesData.sort((a, b) => {
   const timeA = parseFloat(a.timeRaw);
   const timeB = parseFloat(b.timeRaw);
-  
+
   const isNumA = !isNaN(timeA);
   const isNumB = !isNaN(timeB);
-  
+
   if (isNumA && isNumB) {
     return timeA - timeB;
   } else if (isNumA && !isNumB) {
-    return -1; 
+    return -1;
   } else if (!isNumA && isNumB) {
-    return 1;  
+    return 1;
   } else {
     return 0;
   }
@@ -102,10 +103,10 @@ if (fs.existsSync('saved_list.json')) {
 }
 
 if (TEST_MODE || savedListString !== currentListString) {
-  
+
   const commonDate = leavingGamesData.length > 0 ? leavingGamesData[0].date : "TBD";
   let embedFields = [];
-  
+
   for (let j = 0; j < leavingGamesData.length && j < 25; j++) {
     const game = leavingGamesData[j];
     embedFields.push({
