@@ -30,7 +30,7 @@ let leavingGamesData = [];
 for (let i = 2; i < records.length; i++) {
   const row = records[i];
   const gameName = row[0]; // Column A
-  
+
   if (gameName && gameName.trim() !== "") {
     const system = row[1] ? row[1].trim() : "N/A";     // Column B
     const tier = row[2] ? row[2].trim() : "N/A";       // Column C
@@ -42,7 +42,7 @@ for (let i = 2; i < records.length; i++) {
     let leaveDate = "TBD";
     if (rawLeaveDate && rawLeaveDate !== "TBD") {
       const cleanDate = rawLeaveDate.trim();
-      
+
       // Regex checks if it is just "Month YYYY" (e.g., "Jun 2026" or "June 2026")
       if (/^[a-zA-Z]+ \d{4}$/.test(cleanDate)) {
         const parts = cleanDate.split(" ");
@@ -57,8 +57,11 @@ for (let i = 2; i < records.length; i++) {
         }
       }
     }
-    
+
     const completion = rawCompletion ? `${rawCompletion} hrs` : "Unknown";
+
+    const parsedTime = parseFloat(rawCompletion);
+    const isNumTime = !isNaN(parsedTime);
 
     leavingGamesData.push({
       name: gameName.trim(),
@@ -67,7 +70,9 @@ for (let i = 2; i < records.length; i++) {
       tier: tier,
       mc: metacritic,
       time: completion,
-      timeRaw: rawCompletion
+      timeRaw: rawCompletion,
+      parsedTime: parsedTime,
+      isNumTime: isNumTime
     });
   }
 }
@@ -76,24 +81,24 @@ if (leavingGamesData.length === 0) return;
 
 // Replicate sorting logic ascending based on raw hours
 leavingGamesData.sort((a, b) => {
-  const timeA = parseFloat(a.timeRaw);
-  const timeB = parseFloat(b.timeRaw);
-  
-  const isNumA = !isNaN(timeA);
-  const isNumB = !isNaN(timeB);
-  
-  if (isNumA && isNumB) {
-    return timeA - timeB;
-  } else if (isNumA && !isNumB) {
-    return -1; 
-  } else if (!isNumA && isNumB) {
-    return 1;  
+  if (a.isNumTime && b.isNumTime) {
+    return a.parsedTime - b.parsedTime;
+  } else if (a.isNumTime && !b.isNumTime) {
+    return -1;
+  } else if (!a.isNumTime && b.isNumTime) {
+    return 1;
   } else {
     return 0;
   }
 });
 
-const currentListString = JSON.stringify(leavingGamesData);
+// Remove temporary pre-calculated fields before stringifying so we don't trigger a false positive update
+const sanitizedData = leavingGamesData.map(game => {
+  const { parsedTime, isNumTime, ...rest } = game;
+  return rest;
+});
+
+const currentListString = JSON.stringify(sanitizedData);
 let savedListString = "";
 
 // Check local file state instead of Google PropertiesService
@@ -102,10 +107,10 @@ if (fs.existsSync('saved_list.json')) {
 }
 
 if (TEST_MODE || savedListString !== currentListString) {
-  
+
   const commonDate = leavingGamesData.length > 0 ? leavingGamesData[0].date : "TBD";
   let embedFields = [];
-  
+
   for (let j = 0; j < leavingGamesData.length && j < 25; j++) {
     const game = leavingGamesData[j];
     embedFields.push({
