@@ -146,7 +146,7 @@ if (TEST_MODE || savedListString !== currentListString) {
   console.log("No new updates to the sheet. No message sent.");
 }
 } catch (err) {
-console.error("Fatal Operational Error:", err);
+console.error("Fatal Operational Error:", err.message);
 process.exit(1);
 }
 }
