@@ -151,4 +151,4 @@ process.exit(1);
 }
 }
 
-runTracker();
+if (require.main === module) { runTracker(); } module.exports = { runTracker };
