@@ -1,10 +1,8 @@
 // index.js
 const { parse } = require("csv-parse/sync");
-const hltb = require("howlongtobeat");
-const hltbService = new hltb.HowLongToBeatService();
 
 // Configuration
-const TEST_MODE = false; // Set to false so it doesn't spam during automation
+const TEST_MODE = true; // Set to false so it doesn't spam during automation
 const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1511388561188847841/0KXQNm6MFZ7eTqZpvo5GgRfnKho0-uPlSzfbcLtgi0IAXdNlhbFjfh7OMB9vL3rYLKKW";
 const CSV_URL = "https://docs.google.com/spreadsheets/d/19RorxFhWc2lHocg4c9zrVssSwZq1u2nPcpTsAvzdJQw/export?format=csv&gid=353702390";
 
@@ -32,25 +30,38 @@ async function runTracker() {
         // Step 1: Format the Date String
         let formattedDate = "Unknown Date";
         if (leaveDate !== "TBD") {
-          const d = new Date(leaveDate);
-          if (!isNaN(d.getTime())) {
-            formattedDate = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+          if (/^[a-zA-Z]{3} \d{4}$/.test(leaveDate.trim())) {
+            const parts = leaveDate.trim().split(" ");
+            formattedDate = `${parts[0]} 15, ${parts[1]}`;
           } else {
-            formattedDate = leaveDate;
+             const d = new Date(leaveDate);
+             formattedDate = (!isNaN(d.getTime())) ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : leaveDate;
           }
         }
 
-        // Step 2: Force Completionist Data
+        // Step 2: Crashdummy API POST Request
         let completion = "Not found on HLTB";
         try {
-          const hltbResults = await hltbService.search(gameName);
-          if (hltbResults && hltbResults.length > 0) {
-            const compTime = hltbResults[0].gameplayCompletionist;
-            completion = compTime ? `${compTime} hrs` : "No completionist data";
+          const apiResponse = await fetch("https://hltbapi.codepotatoes.de/search", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ searchTerms: [gameName] }) 
+          });
+          
+          if (apiResponse.ok) {
+             const hltbResults = await apiResponse.json();
+             // Step 3: Map to completionist variable
+             if (Array.isArray(hltbResults) && hltbResults.length > 0) {
+                const compTime = hltbResults[0].completionist;
+                completion = compTime ? `${compTime} hrs` : "No completionist data";
+             }
+          } else {
+             console.error(`Crashdummy API Error for ${gameName}: ${apiResponse.status}`);
+             completion = "API Blocked";
           }
         } catch (error) {
-          console.error(`HLTB API Blocked for ${gameName}`);
-          completion = "API Blocked";
+          console.error(`Fetch failed for ${gameName}`);
+          completion = "API Error";
         }
 
         leavingGamesData.push({
