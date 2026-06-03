@@ -5,7 +5,14 @@ const fs = require("fs");
 // SET THIS TO true FOR TESTING, THEN BACK TO false WHEN YOU ARE DONE
 const TEST_MODE = false;
 
-const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1511388561188847841/0KXQNm6MFZ7eTqZpvo5GgRfnKho0-uPlSzfbcLtgi0IAXdNlhbFjfh7OMB9vL3rYLKKW";
+// Pulls the secure webhook URL from GitHub's hidden environment variables
+const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
+
+if (!DISCORD_WEBHOOK_URL) {
+  console.error("FATAL ERROR: No Discord Webhook URL provided in environment variables.");
+  process.exit(1);
+}
+
 const CSV_URL = "https://docs.google.com/spreadsheets/d/19RorxFhWc2lHocg4c9zrVssSwZq1u2nPcpTsAvzdJQw/export?format=csv&gid=353702390";
 
 async function runTracker() {
