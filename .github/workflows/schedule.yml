@@ -2,13 +2,14 @@ name: PS Plus Tracker Automation
 
 on:
   schedule:
-    # Runs every 6 hours
     - cron: '0 */6 * * *'
   workflow_dispatch:
 
 jobs:
   check-and-post:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     permissions:
       contents: write
 
@@ -22,7 +23,7 @@ jobs:
           node-version: '24'
 
       - name: Install Dependencies
-        run: npm install howlongtobeat csv-parse
+        run: npm install csv-parse
 
       - name: Run Tracker Script
         run: node index.js
