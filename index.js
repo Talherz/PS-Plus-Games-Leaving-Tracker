@@ -3,7 +3,7 @@ const { parse } = require("csv-parse/sync");
 const fs = require("fs");
 
 // SET THIS TO true FOR TESTING, THEN BACK TO false WHEN YOU ARE DONE
-const TEST_MODE = true;
+const TEST_MODE = false;
 
 const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1511388561188847841/0KXQNm6MFZ7eTqZpvo5GgRfnKho0-uPlSzfbcLtgi0IAXdNlhbFjfh7OMB9vL3rYLKKW";
 const CSV_URL = "https://docs.google.com/spreadsheets/d/19RorxFhWc2lHocg4c9zrVssSwZq1u2nPcpTsAvzdJQw/export?format=csv&gid=353702390";
