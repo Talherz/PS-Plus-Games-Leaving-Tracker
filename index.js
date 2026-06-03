@@ -137,7 +137,7 @@ if (TEST_MODE || savedListString !== currentListString) {
   });
 
   if (discordResponse.ok) {
-    fs.writeFileSync('saved_list.json', currentListString);
+    await fs.promises.writeFile('saved_list.json', currentListString);
     console.log("Message successfully posted to Discord and memory state saved.");
   } else {
     console.error(`Failed to post. Discord returned code: ${discordResponse.status}`);
