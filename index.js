@@ -25,13 +25,12 @@ const records = parse(csvText, {
 });
 
 let leavingGamesData = [];
-const dateRegex = /^[a-zA-Z]+ \d{4}$/;
 
 // Starting loop at index 2 to skip headers
 for (let i = 2; i < records.length; i++) {
   const row = records[i];
   const gameName = row[0]; // Column A
-
+  
   if (gameName && gameName.trim() !== "") {
     const system = row[1] ? row[1].trim() : "N/A";     // Column B
     const tier = row[2] ? row[2].trim() : "N/A";       // Column C
@@ -43,9 +42,9 @@ for (let i = 2; i < records.length; i++) {
     let leaveDate = "TBD";
     if (rawLeaveDate && rawLeaveDate !== "TBD") {
       const cleanDate = rawLeaveDate.trim();
-
+      
       // Regex checks if it is just "Month YYYY" (e.g., "Jun 2026" or "June 2026")
-      if (dateRegex.test(cleanDate)) {
+      if (/^[a-zA-Z]+ \d{4}$/.test(cleanDate)) {
         const parts = cleanDate.split(" ");
         // Grab the first 3 letters of the month and force the 15th
         leaveDate = `${parts[0].substring(0, 3)} 15, ${parts[1]}`;
@@ -58,7 +57,7 @@ for (let i = 2; i < records.length; i++) {
         }
       }
     }
-
+    
     const completion = rawCompletion ? `${rawCompletion} hrs` : "Unknown";
 
     leavingGamesData.push({
@@ -79,16 +78,16 @@ if (leavingGamesData.length === 0) return;
 leavingGamesData.sort((a, b) => {
   const timeA = parseFloat(a.timeRaw);
   const timeB = parseFloat(b.timeRaw);
-
+  
   const isNumA = !isNaN(timeA);
   const isNumB = !isNaN(timeB);
-
+  
   if (isNumA && isNumB) {
     return timeA - timeB;
   } else if (isNumA && !isNumB) {
-    return -1;
+    return -1; 
   } else if (!isNumA && isNumB) {
-    return 1;
+    return 1;  
   } else {
     return 0;
   }
@@ -98,15 +97,17 @@ const currentListString = JSON.stringify(leavingGamesData);
 let savedListString = "";
 
 // Check local file state instead of Google PropertiesService
-if (fs.existsSync('saved_list.json')) {
-  savedListString = fs.readFileSync('saved_list.json', 'utf8');
+try {
+  savedListString = await fs.promises.readFile('saved_list.json', 'utf8');
+} catch (err) {
+  if (err.code !== 'ENOENT') throw err;
 }
 
 if (TEST_MODE || savedListString !== currentListString) {
-
+  
   const commonDate = leavingGamesData.length > 0 ? leavingGamesData[0].date : "TBD";
   let embedFields = [];
-
+  
   for (let j = 0; j < leavingGamesData.length && j < 25; j++) {
     const game = leavingGamesData[j];
     embedFields.push({
@@ -138,7 +139,7 @@ if (TEST_MODE || savedListString !== currentListString) {
   });
 
   if (discordResponse.ok) {
-    fs.writeFileSync('saved_list.json', currentListString);
+    await fs.promises.writeFile('saved_list.json', currentListString);
     console.log("Message successfully posted to Discord and memory state saved.");
   } else {
     console.error(`Failed to post. Discord returned code: ${discordResponse.status}`);
@@ -147,7 +148,7 @@ if (TEST_MODE || savedListString !== currentListString) {
   console.log("No new updates to the sheet. No message sent.");
 }
 } catch (err) {
-console.error("Fatal Operational Error:", err);
+console.error("Fatal Operational Error:", err.message);
 process.exit(1);
 }
 }
