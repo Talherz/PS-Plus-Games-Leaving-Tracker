@@ -1,5 +1,5 @@
 // SET THIS TO true FOR TESTING, THEN BACK TO false WHEN YOU ARE DONE
-const TEST_MODE = true;
+const TEST_MODE = false;
 
 // Pulls the secure webhook URL from GitHub's hidden environment variables
 const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
