@@ -97,8 +97,10 @@ const currentListString = JSON.stringify(leavingGamesData);
 let savedListString = "";
 
 // Check local file state instead of Google PropertiesService
-if (fs.existsSync('saved_list.json')) {
-  savedListString = fs.readFileSync('saved_list.json', 'utf8');
+try {
+  savedListString = await fs.promises.readFile('saved_list.json', 'utf8');
+} catch (err) {
+  if (err.code !== 'ENOENT') throw err;
 }
 
 if (TEST_MODE || savedListString !== currentListString) {
@@ -146,7 +148,7 @@ if (TEST_MODE || savedListString !== currentListString) {
   console.log("No new updates to the sheet. No message sent.");
 }
 } catch (err) {
-console.error("Fatal Operational Error:", err);
+console.error("Fatal Operational Error:", err.message);
 process.exit(1);
 }
 }
