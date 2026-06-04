@@ -5,19 +5,17 @@ const fs = require("fs");
 // SET THIS TO true FOR TESTING, THEN BACK TO false WHEN YOU ARE DONE
 const TEST_MODE = false;
 
+// Pulls the secure webhook URL from GitHub's hidden environment variables
+const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
+
+if (!DISCORD_WEBHOOK_URL) {
+  console.error("FATAL ERROR: No Discord Webhook URL provided in environment variables.");
+  process.exit(1);
+}
 
 const CSV_URL = "https://docs.google.com/spreadsheets/d/19RorxFhWc2lHocg4c9zrVssSwZq1u2nPcpTsAvzdJQw/export?format=csv&gid=353702390";
 
-async function runTracker(webhookUrl = process.env.DISCORD_WEBHOOK_URL) {
-if (!webhookUrl) {
-  console.error("FATAL ERROR: No Discord Webhook URL provided.");
-  if (process.env.NODE_ENV !== 'test') {
-    process.exit(1);
-  } else {
-    throw new Error("No Discord Webhook URL provided.");
-  }
-}
-
+async function runTracker() {
 try {
 const response = await fetch(CSV_URL);
 const csvText = await response.text();
@@ -32,7 +30,7 @@ let leavingGamesData = [];
 for (let i = 2; i < records.length; i++) {
   const row = records[i];
   const gameName = row[0]; // Column A
-
+  
   if (gameName && gameName.trim() !== "") {
     const system = row[1] ? row[1].trim() : "N/A";     // Column B
     const tier = row[2] ? row[2].trim() : "N/A";       // Column C
@@ -44,7 +42,7 @@ for (let i = 2; i < records.length; i++) {
     let leaveDate = "TBD";
     if (rawLeaveDate && rawLeaveDate !== "TBD") {
       const cleanDate = rawLeaveDate.trim();
-
+      
       // Regex checks if it is just "Month YYYY" (e.g., "Jun 2026" or "June 2026")
       if (/^[a-zA-Z]+ \d{4}$/.test(cleanDate)) {
         const parts = cleanDate.split(" ");
@@ -59,7 +57,7 @@ for (let i = 2; i < records.length; i++) {
         }
       }
     }
-
+    
     const completion = rawCompletion ? `${rawCompletion} hrs` : "Unknown";
 
     leavingGamesData.push({
@@ -80,16 +78,16 @@ if (leavingGamesData.length === 0) return;
 leavingGamesData.sort((a, b) => {
   const timeA = parseFloat(a.timeRaw);
   const timeB = parseFloat(b.timeRaw);
-
+  
   const isNumA = !isNaN(timeA);
   const isNumB = !isNaN(timeB);
-
+  
   if (isNumA && isNumB) {
     return timeA - timeB;
   } else if (isNumA && !isNumB) {
-    return -1;
+    return -1; 
   } else if (!isNumA && isNumB) {
-    return 1;
+    return 1;  
   } else {
     return 0;
   }
@@ -99,15 +97,17 @@ const currentListString = JSON.stringify(leavingGamesData);
 let savedListString = "";
 
 // Check local file state instead of Google PropertiesService
-if (fs.existsSync('saved_list.json')) {
-  savedListString = fs.readFileSync('saved_list.json', 'utf8');
+try {
+  savedListString = await fs.promises.readFile('saved_list.json', 'utf8');
+} catch (err) {
+  if (err.code !== 'ENOENT') throw err;
 }
 
 if (TEST_MODE || savedListString !== currentListString) {
-
+  
   const commonDate = leavingGamesData.length > 0 ? leavingGamesData[0].date : "TBD";
   let embedFields = [];
-
+  
   for (let j = 0; j < leavingGamesData.length && j < 25; j++) {
     const game = leavingGamesData[j];
     embedFields.push({
@@ -132,14 +132,14 @@ if (TEST_MODE || savedListString !== currentListString) {
     }]
   };
 
-  const discordResponse = await fetch(webhookUrl, {
+  const discordResponse = await fetch(DISCORD_WEBHOOK_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload)
   });
 
   if (discordResponse.ok) {
-    fs.writeFileSync('saved_list.json', currentListString);
+    await fs.promises.writeFile('saved_list.json', currentListString);
     console.log("Message successfully posted to Discord and memory state saved.");
   } else {
     console.error(`Failed to post. Discord returned code: ${discordResponse.status}`);
@@ -148,14 +148,9 @@ if (TEST_MODE || savedListString !== currentListString) {
   console.log("No new updates to the sheet. No message sent.");
 }
 } catch (err) {
-console.error("Fatal Operational Error:", err);
-if (process.env.NODE_ENV !== 'test') process.exit(1);
-else throw err;
+console.error("Fatal Operational Error:", err.message);
+process.exit(1);
 }
 }
 
-if (require.main === module) {
-  runTracker();
-}
-
-module.exports = { runTracker };
+runTracker();
