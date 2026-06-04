@@ -1,7 +1,7 @@
 {
   "name": "ps-plus-tracker",
   "version": "1.0.0",
-  "description": "Automated tracker for games leaving PlayStation Plus with HowLongToBeat integration.",
+  "description": "Automated tracker for games leaving PlayStation Plus.",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
