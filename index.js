@@ -1,4 +1,5 @@
-const fs = require('fs');
+const { parse } = require("csv-parse/sync");
+const fs = require("fs");
 
 // SET THIS TO true FOR TESTING, THEN BACK TO false WHEN YOU ARE DONE
 const TEST_MODE = false;
