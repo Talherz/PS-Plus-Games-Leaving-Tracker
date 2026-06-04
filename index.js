@@ -1,3 +1,6 @@
+const { parse } = require('csv-parse/sync');
+const fsp = require('fs').promises;
+
 // SET THIS TO true FOR TESTING, THEN BACK TO false WHEN YOU ARE DONE
 const TEST_MODE = false;
 
@@ -92,8 +95,12 @@ const currentListString = JSON.stringify(leavingGamesData);
 let savedListString = "";
 
 // Check local file state instead of Google PropertiesService
-if (fs.existsSync('saved_list.json')) {
-  savedListString = fs.readFileSync('saved_list.json', 'utf8');
+try {
+  savedListString = await fsp.readFile('saved_list.json', 'utf8');
+} catch (err) {
+  if (err.code !== 'ENOENT') {
+    throw err;
+  }
 }
 
 if (TEST_MODE || savedListString !== currentListString) {
@@ -132,7 +139,7 @@ if (TEST_MODE || savedListString !== currentListString) {
   });
 
   if (discordResponse.ok) {
-    fs.writeFileSync('saved_list.json', currentListString);
+    await fsp.writeFile('saved_list.json', currentListString);
     console.log("Message successfully posted to Discord and memory state saved.");
   } else {
     console.error(`Failed to post. Discord returned code: ${discordResponse.status}`);
