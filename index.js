@@ -13,6 +13,28 @@ if (!DISCORD_WEBHOOK_URL) {
 }
 const CSV_URL = "https://docs.google.com/spreadsheets/d/19RorxFhWc2lHocg4c9zrVssSwZq1u2nPcpTsAvzdJQw/export?format=csv&gid=353702390";
 
+function formatLeaveDate(rawLeaveDate) {
+  if (!rawLeaveDate || rawLeaveDate === "TBD") {
+    return "TBD";
+  }
+
+  const cleanDate = rawLeaveDate.trim();
+
+  // Regex checks if it is just "Month YYYY" (e.g., "Jun 2026" or "June 2026")
+  if (/^[a-zA-Z]+ \d{4}$/.test(cleanDate)) {
+    const parts = cleanDate.split(" ");
+    // Grab the first 3 letters of the month and force the 15th
+    return `${parts[0].substring(0, 3)} 15, ${parts[1]}`;
+  }
+
+  const d = new Date(cleanDate);
+  if (!isNaN(d.getTime())) {
+    return d.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+  }
+
+  return cleanDate;
+}
+
 async function runTracker() {
 try {
 const response = await fetch(CSV_URL);
@@ -36,25 +58,7 @@ for (let i = 2; i < records.length; i++) {
     const metacritic = row[9] ? row[9].trim() : "N/A"; // Column J
     const rawCompletion = row[11] ? row[11].trim() : ""; // Column L
 
-    // Format Date String to match 'MMM 15, yyyy' if day is missing
-    let leaveDate = "TBD";
-    if (rawLeaveDate && rawLeaveDate !== "TBD") {
-      const cleanDate = rawLeaveDate.trim();
-      
-      // Regex checks if it is just "Month YYYY" (e.g., "Jun 2026" or "June 2026")
-      if (/^[a-zA-Z]+ \d{4}$/.test(cleanDate)) {
-        const parts = cleanDate.split(" ");
-        // Grab the first 3 letters of the month and force the 15th
-        leaveDate = `${parts[0].substring(0, 3)} 15, ${parts[1]}`;
-      } else {
-        const d = new Date(cleanDate);
-        if (!isNaN(d.getTime())) {
-          leaveDate = d.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
-        } else {
-          leaveDate = cleanDate;
-        }
-      }
-    }
+    const leaveDate = formatLeaveDate(rawLeaveDate);
     
     const completion = rawCompletion ? `${rawCompletion} hrs` : "Unknown";
 
@@ -148,7 +152,7 @@ if (TEST_MODE || savedListString !== currentListString) {
   console.log("No new updates to the sheet. No message sent.");
 }
 } catch (err) {
-console.error("Fatal Operational Error:", err);
+console.error("Fatal Operational Error:", err.message);
 process.exit(1);
 }
 }
