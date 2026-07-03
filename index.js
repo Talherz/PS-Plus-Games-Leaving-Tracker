@@ -1,6 +1,14 @@
 const { parse } = require('csv-parse/sync');
 const fsp = require('fs').promises;
 
+// CSV Column Indices
+const COL_GAME_NAME = 0;   // Column A
+const COL_SYSTEM = 1;      // Column B
+const COL_TIER = 2;        // Column C
+const COL_LEAVE_DATE = 5;  // Column F
+const COL_METACRITIC = 9;  // Column J
+const COL_COMPLETION = 11; // Column L
+
 // SET THIS TO true FOR TESTING, THEN BACK TO false WHEN YOU ARE DONE
 const TEST_MODE = false;
 
@@ -49,14 +57,14 @@ let leavingGamesData = [];
 // Starting loop at index 2 to skip headers
 for (let i = 2; i < records.length; i++) {
   const row = records[i];
-  const gameName = row[0]; // Column A
+  const gameName = row[COL_GAME_NAME]; // Column A
   
   if (gameName && gameName.trim() !== "") {
-    const system = row[1] ? row[1].trim() : "N/A";     // Column B
-    const tier = row[2] ? row[2].trim() : "N/A";       // Column C
-    const rawLeaveDate = row[5] ? row[5].trim() : "TBD"; // Column F
-    const metacritic = row[9] ? row[9].trim() : "N/A"; // Column J
-    const rawCompletion = row[11] ? row[11].trim() : ""; // Column L
+    const system = row[COL_SYSTEM] ? row[COL_SYSTEM].trim() : "N/A";     // Column B
+    const tier = row[COL_TIER] ? row[COL_TIER].trim() : "N/A";       // Column C
+    const rawLeaveDate = row[COL_LEAVE_DATE] ? row[COL_LEAVE_DATE].trim() : "TBD"; // Column F
+    const metacritic = row[COL_METACRITIC] ? row[COL_METACRITIC].trim() : "N/A"; // Column J
+    const rawCompletion = row[COL_COMPLETION] ? row[COL_COMPLETION].trim() : ""; // Column L
 
     const leaveDate = formatLeaveDate(rawLeaveDate);
     
