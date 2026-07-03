@@ -38,6 +38,9 @@ function formatLeaveDate(rawLeaveDate) {
 async function runTracker() {
 try {
 const response = await fetch(CSV_URL);
+if (!response.ok) {
+  throw new Error(`Failed to fetch CSV: ${response.status} ${response.statusText}`);
+}
 const csvText = await response.text();
 
 const records = parse(csvText, {
