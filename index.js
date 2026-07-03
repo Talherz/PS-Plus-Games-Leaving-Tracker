@@ -114,9 +114,12 @@ if (TEST_MODE || savedListString !== currentListString) {
   
   for (let j = 0; j < leavingGamesData.length && j < 25; j++) {
     const game = leavingGamesData[j];
+    const safeName = game.name.substring(0, 250);
+    const safeValue = ("Platform: " + game.system + " • Tier: " + game.tier + "\nMetacritic: " + game.mc + " • Completion: " + game.time).substring(0, 1024);
+
     embedFields.push({
-      "name": "**" + game.name + "**",
-      "value": "Platform: " + game.system + " • Tier: " + game.tier + "\nMetacritic: " + game.mc + " • Completion: " + game.time,
+      "name": "**" + safeName + "**",
+      "value": safeValue,
       "inline": false
     });
   }
