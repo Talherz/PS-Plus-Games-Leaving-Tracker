@@ -1,4 +1,5 @@
-const { parse } = require('csv-parse/sync');
+const { parse } = require('csv-parse');
+const { Readable } = require('stream');
 const fsp = require('fs').promises;
 
 // SET THIS TO true FOR TESTING, THEN BACK TO false WHEN YOU ARE DONE
@@ -38,17 +39,20 @@ function formatLeaveDate(rawLeaveDate) {
 async function runTracker() {
 try {
 const response = await fetch(CSV_URL);
-const csvText = await response.text();
 
-const records = parse(csvText, {
+const parser = Readable.fromWeb(response.body).pipe(parse({
   skip_empty_lines: true
-});
+}));
 
 let leavingGamesData = [];
 
-// Starting loop at index 2 to skip headers
-for (let i = 2; i < records.length; i++) {
-  const row = records[i];
+let rowIndex = 0;
+for await (const row of parser) {
+  if (rowIndex < 2) {
+    rowIndex++;
+    continue;
+  }
+
   const gameName = row[0]; // Column A
   
   if (gameName && gameName.trim() !== "") {
@@ -72,6 +76,8 @@ for (let i = 2; i < records.length; i++) {
       timeRaw: rawCompletion
     });
   }
+
+  rowIndex++;
 }
 
 if (leavingGamesData.length === 0) return;
