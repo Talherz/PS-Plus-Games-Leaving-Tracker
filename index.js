@@ -115,8 +115,8 @@ if (TEST_MODE || savedListString !== currentListString) {
   for (let j = 0; j < leavingGamesData.length && j < 25; j++) {
     const game = leavingGamesData[j];
     embedFields.push({
-      "name": "**" + game.name + "**",
-      "value": "Platform: " + game.system + " • Tier: " + game.tier + "\nMetacritic: " + game.mc + " • Completion: " + game.time,
+      "name": `**${game.name}**`,
+      "value": `Platform: ${game.system} • Tier: ${game.tier}\nMetacritic: ${game.mc} • Completion: ${game.time}`,
       "inline": false
     });
   }
@@ -126,7 +126,7 @@ if (TEST_MODE || savedListString !== currentListString) {
     "embeds": [{
       "title": "Games Leaving PS Plus Soon",
       "url": "https://docs.google.com/spreadsheets/d/19RorxFhWc2lHocg4c9zrVssSwZq1u2nPcpTsAvzdJQw/edit#gid=353702390",
-      "description": "Here are the games leaving PS+ on **" + commonDate + "**.",
+      "description": `Here are the games leaving PS+ on **${commonDate}**.`,
       "color": 16753920,
       "fields": embedFields,
       "footer": {
