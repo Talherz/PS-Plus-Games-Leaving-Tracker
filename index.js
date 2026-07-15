@@ -130,9 +130,20 @@ if (TEST_MODE || savedListString !== currentListString) {
   
   for (let j = 0; j < leavingGamesData.length && j < 25; j++) {
     const game = leavingGamesData[j];
+
+    let fieldName = `**${game.name}**`;
+    if (fieldName.length > 256) {
+      fieldName = fieldName.substring(0, 253) + '...';
+    }
+
+    let fieldValue = `Platform: ${game.system} • Tier: ${game.tier}\nMetacritic: ${game.mc} • Completion: ${game.time}`;
+    if (fieldValue.length > 1024) {
+      fieldValue = fieldValue.substring(0, 1021) + '...';
+    }
+
     embedFields.push({
-      "name": `**${game.name}**`,
-      "value": `Platform: ${game.system} • Tier: ${game.tier}\nMetacritic: ${game.mc} • Completion: ${game.time}`,
+      "name": fieldName,
+      "value": fieldValue,
       "inline": false
     });
   }
