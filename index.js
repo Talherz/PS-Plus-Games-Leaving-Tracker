@@ -15,14 +15,17 @@ const TEST_MODE = false;
 // Pulls the secure webhook URL from GitHub's hidden environment variables
 const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
 
-if (!DISCORD_WEBHOOK_URL) {
-  console.error("FATAL ERROR: No Discord Webhook URL provided in environment variables.");
-  process.exit(1);
-}
+// Ensure environment variables are checked only when run directly
+if (require.main === module) {
+  if (!DISCORD_WEBHOOK_URL) {
+    console.error("FATAL ERROR: No Discord Webhook URL provided in environment variables.");
+    process.exit(1);
+  }
 
-if (!DISCORD_WEBHOOK_URL.startsWith("https://discord.com/api/webhooks/")) {
-  console.error("FATAL ERROR: Invalid Discord Webhook URL provided. Must start with 'https://discord.com/api/webhooks/'.");
-  process.exit(1);
+  if (!DISCORD_WEBHOOK_URL.startsWith("https://discord.com/api/webhooks/")) {
+    console.error("FATAL ERROR: Invalid Discord Webhook URL provided. Must start with 'https://discord.com/api/webhooks/'.");
+    process.exit(1);
+  }
 }
 const CSV_URL = "https://docs.google.com/spreadsheets/d/19RorxFhWc2lHocg4c9zrVssSwZq1u2nPcpTsAvzdJQw/export?format=csv&gid=353702390";
 
@@ -193,4 +196,10 @@ process.exit(1);
 }
 }
 
-runTracker();
+if (require.main === module) {
+  runTracker();
+} else {
+  module.exports = {
+    formatLeaveDate
+  };
+}
