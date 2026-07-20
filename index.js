@@ -93,7 +93,8 @@ for (let i = 2; i < records.length; i++) {
       tier: tier,
       mc: metacritic,
       time: completion,
-      timeRaw: rawCompletion
+      timeRaw: rawCompletion,
+      timeNum: parseFloat(rawCompletion)
     });
   }
 }
@@ -102,8 +103,8 @@ if (leavingGamesData.length === 0) return;
 
 // Replicate sorting logic ascending based on raw hours
 leavingGamesData.sort((a, b) => {
-  const timeA = parseFloat(a.timeRaw);
-  const timeB = parseFloat(b.timeRaw);
+  const timeA = a.timeNum;
+  const timeB = b.timeNum;
   
   const isNumA = !isNaN(timeA);
   const isNumB = !isNaN(timeB);
