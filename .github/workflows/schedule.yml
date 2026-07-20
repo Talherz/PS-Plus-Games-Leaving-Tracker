@@ -21,7 +21,7 @@ jobs:
           node-version: '20'
 
       - name: Install Dependencies
-        run: npm install csv-parse --no-save
+        run: npm ci
 
       - name: Run Tracker Script
         run: node index.js
