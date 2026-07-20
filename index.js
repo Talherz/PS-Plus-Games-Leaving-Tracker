@@ -26,6 +26,12 @@ if (!DISCORD_WEBHOOK_URL.startsWith("https://discord.com/api/webhooks/")) {
 }
 const CSV_URL = "https://docs.google.com/spreadsheets/d/19RorxFhWc2lHocg4c9zrVssSwZq1u2nPcpTsAvzdJQw/export?format=csv&gid=353702390";
 
+function escapeMarkdown(text) {
+  if (!text) return text;
+  // Escape Discord markdown characters
+  return String(text).replace(/([\\*_~`|<>\[\]])/g, '\\$1');
+}
+
 function formatLeaveDate(rawLeaveDate) {
   if (!rawLeaveDate || rawLeaveDate === "TBD") {
     return "TBD";
@@ -131,12 +137,12 @@ if (TEST_MODE || savedListString !== currentListString) {
   for (let j = 0; j < leavingGamesData.length && j < 25; j++) {
     const game = leavingGamesData[j];
 
-    let fieldName = `**${game.name}**`;
+    let fieldName = `**${escapeMarkdown(game.name)}**`;
     if (fieldName.length > 256) {
       fieldName = fieldName.substring(0, 253) + '...';
     }
 
-    let fieldValue = `Platform: ${game.system} • Tier: ${game.tier}\nMetacritic: ${game.mc} • Completion: ${game.time}`;
+    let fieldValue = `Platform: ${escapeMarkdown(game.system)} • Tier: ${escapeMarkdown(game.tier)}\nMetacritic: ${escapeMarkdown(game.mc)} • Completion: ${escapeMarkdown(game.time)}`;
     if (fieldValue.length > 1024) {
       fieldValue = fieldValue.substring(0, 1021) + '...';
     }
@@ -153,7 +159,7 @@ if (TEST_MODE || savedListString !== currentListString) {
     "embeds": [{
       "title": "Games Leaving PS Plus Soon",
       "url": "https://docs.google.com/spreadsheets/d/19RorxFhWc2lHocg4c9zrVssSwZq1u2nPcpTsAvzdJQw/edit#gid=353702390",
-      "description": `Here are the games leaving PS+ on **${commonDate}**.`,
+      "description": `Here are the games leaving PS+ on **${escapeMarkdown(commonDate)}**.`,
       "color": 16753920,
       "fields": embedFields,
       "footer": {
