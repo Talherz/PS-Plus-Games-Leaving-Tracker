@@ -32,6 +32,8 @@ function escapeMarkdown(text) {
   return String(text).replace(/([\\*_~`|<>\[\]])/g, '\\$1');
 }
 
+const LEAVE_DATE_REGEX = /^[a-zA-Z]+ \d{4}$/;
+
 function formatLeaveDate(rawLeaveDate) {
   if (!rawLeaveDate || rawLeaveDate === "TBD") {
     return "TBD";
@@ -40,7 +42,7 @@ function formatLeaveDate(rawLeaveDate) {
   const cleanDate = rawLeaveDate.trim();
 
   // Regex checks if it is just "Month YYYY" (e.g., "Jun 2026" or "June 2026")
-  if (/^[a-zA-Z]+ \d{4}$/.test(cleanDate)) {
+  if (LEAVE_DATE_REGEX.test(cleanDate)) {
     const parts = cleanDate.split(" ");
     // Grab the first 3 letters of the month and force the 15th
     return `${parts[0].substring(0, 3)} 15, ${parts[1]}`;
