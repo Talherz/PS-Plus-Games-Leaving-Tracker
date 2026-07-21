@@ -200,6 +200,7 @@ if (require.main === module) {
   runTracker();
 } else {
   module.exports = {
-    formatLeaveDate
+    formatLeaveDate,
+    runTracker
   };
 }
