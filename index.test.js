@@ -1,6 +1,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert');
-const { formatLeaveDate } = require('./index.js');
+const fs = require('fs');
+const { formatLeaveDate, runTracker } = require('./index.js');
 
 test('formatLeaveDate', async (t) => {
   await t.test('handles null, undefined, and empty string', () => {
@@ -31,5 +32,84 @@ test('formatLeaveDate', async (t) => {
     // For completely invalid strings that do not match the regex and fail new Date()
     assert.strictEqual(formatLeaveDate('Unknown Date Format'), 'Unknown Date Format');
     assert.strictEqual(formatLeaveDate('  Some weird string  '), 'Some weird string');
+  });
+});
+
+test('runTracker fs.readFile error handling', async (t) => {
+  await t.test('throws and exits on non-ENOENT read error', async (t) => {
+    // Mock fetch so we bypass the network request
+    t.mock.method(global, 'fetch', async () => {
+      return {
+        ok: true,
+        text: async () => 'ColA,ColB,ColC,ColD,ColE,ColF,ColG,ColH,ColI,ColJ,ColK,ColL\n1,2,3,4,5,6,7,8,9,10,11,12\nTestGame,PS5,Extra,,,TBD,,,,80,,10'
+      };
+    });
+
+    // Mock fs.promises.readFile to throw a non-ENOENT error
+    t.mock.method(fs.promises, 'readFile', async () => {
+      const err = new Error('Permission denied');
+      err.code = 'EACCES';
+      throw err;
+    });
+
+    let exitCode = null;
+    t.mock.method(process, 'exit', (code) => {
+      exitCode = code;
+    });
+
+    let errorMessage = null;
+    t.mock.method(console, 'error', (msg, err) => {
+      errorMessage = msg + ' ' + err;
+    });
+
+    await runTracker();
+
+    assert.strictEqual(exitCode, 1);
+    assert.ok(errorMessage.includes('Permission denied'));
+  });
+
+  await t.test('ignores ENOENT read error and continues', async (t) => {
+    // Mock fetch so we bypass the network request
+    t.mock.method(global, 'fetch', async () => {
+      return {
+        ok: true,
+        text: async () => 'ColA,ColB,ColC,ColD,ColE,ColF,ColG,ColH,ColI,ColJ,ColK,ColL\n1,2,3,4,5,6,7,8,9,10,11,12\nTestGame,PS5,Extra,,,TBD,,,,80,,10'
+      };
+    });
+
+    // Mock fs.promises.readFile to throw an ENOENT error (file not found)
+    t.mock.method(fs.promises, 'readFile', async () => {
+      const err = new Error('File not found');
+      err.code = 'ENOENT';
+      throw err;
+    });
+
+    // Also mock fs.promises.writeFile to avoid actually writing files
+    let fileWritten = false;
+    t.mock.method(fs.promises, 'writeFile', async () => {
+      fileWritten = true;
+    });
+
+    let exitCode = null;
+    t.mock.method(process, 'exit', (code) => {
+      exitCode = code;
+    });
+
+    let consoleLog = null;
+    t.mock.method(console, 'log', (msg) => {
+      consoleLog = msg;
+    });
+
+    let consoleError = null;
+    t.mock.method(console, 'error', (msg, err) => {
+      consoleError = msg + ' ' + err;
+    });
+
+    await runTracker();
+
+    // Since TEST_MODE is false and DISCORD_WEBHOOK_URL is not set for the discord fetch,
+    // discordResponse.ok will be false since we are using the mocked global fetch which
+    // now we mock discord webhook call also just in case.
+    assert.strictEqual(exitCode, null, 'Process should not exit on ENOENT');
   });
 });
