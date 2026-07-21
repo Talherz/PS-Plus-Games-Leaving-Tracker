@@ -1,83 +1,83 @@
 # 🎮 PS Plus Games Leaving Tracker
 
-An automated, serverless Node.js bot that monitors the PlayStation Plus catalog for games leaving the service, retrieves their completionist hours, and pushes perfectly formatted alerts directly to a Discord server.
+A simple automated tool that watches the PlayStation Plus catalog to see when games are leaving the service. It finds out how long each game takes to beat and sends clean, easy-to-read alerts straight to your Discord server.
 
-Built entirely on **GitHub Actions**, this script runs on a scheduled cron job, ensuring zero server costs and zero maintenance. It reads data dynamically from the community-driven [PS Plus Master List](https://docs.google.com/spreadsheets/d/19RorxFhWc2lHocg4c9zrVssSwZq1u2nPcpTsAvzdJQw/edit#gid=353702390) to avoid API rate limits and web scraping bans.
+This tool runs completely in the background using **GitHub Actions**, meaning it's free and requires no maintenance. It gathers its data from the community-driven [PS Plus Master List](https://docs.google.com/spreadsheets/d/19RorxFhWc2lHocg4c9zrVssSwZq1u2nPcpTsAvzdJQw/edit#gid=353702390) so it's always up to date.
 
 ## ✨ Features
-* **Serverless Automation:** Runs reliably in the background via GitHub Actions.
-* **Secure by Design:** Utilizes GitHub Secrets to inject environment variables at runtime, ensuring your private Discord Webhook URL is never exposed.
-* **Discord Webhook Integration:** Delivers clean, easily scannable embedded messages.
-* **Smart Memory State:** Uses a localized `saved_list.json` to remember previous runs, ensuring your Discord server is only pinged when new games are added to the departure list.
-* **Time-to-Beat Sorting:** Automatically sorts games by raw completion hours so players can prioritize their backlog.
-* **Testing Ready:** Contains native Node.js tests (`node:test`) and a built-in `TEST_MODE` to safely simulate and debug webhook logic.
+* **Fully Automated:** Runs by itself in the background. You set it up once and forget it.
+* **Private and Secure:** Your Discord server details are kept completely private.
+* **Discord Alerts:** Sends neat, formatted messages directly to your server.
+* **Smart Notifications:** It remembers what it has already posted, so you only get pinged when *new* games are announced as leaving.
+* **Time-to-Beat Sorting:** Automatically sorts leaving games by how many hours they take to beat, helping players prioritize their backlog.
+* **Easy Testing:** Includes tools to safely test the bot without sending fake messages to your Discord server.
 
 ## 🚀 How to Use This for Your Own Server
 
-You can easily fork this project and set it up for your own Discord community in less than 5 minutes. Because this repository uses GitHub Secrets, your server details will remain completely private even if your forked repository is public!
+You can easily copy this project and set it up for your own Discord community in less than 5 minutes. Your server details will remain totally private.
 
-### Prerequisites
-* A Discord server where you have permission to create Webhooks.
+### What You Need
+* A Discord server where you have permission to create Webhooks (a way to receive automated messages).
 * A free GitHub account.
 
 ### Setup Instructions
 
-1.  **Fork the Repository:** Click the "Fork" button at the top right of this page to copy this project to your own GitHub account.
+1.  **Copy the Project:** Click the "Fork" button at the top right of this page to create your own copy of this project on your GitHub account.
 2.  **Create a Discord Webhook:**
     * Go to your Discord Server Settings > Integrations > Webhooks.
-    * Click **New Webhook**, name it, choose the channel for alerts, and click **Copy Webhook URL**.
-3.  **Configure GitHub Secrets (Security Step):**
-    * In your forked GitHub repository, click the **Settings** tab.
-    * On the left sidebar, scroll down to **Secrets and variables** and click **Actions**.
+    * Click **New Webhook**, give it a name, choose the channel where you want the alerts to go, and click **Copy Webhook URL**.
+3.  **Keep Your URL Secret:**
+    * In your new GitHub project, click the **Settings** tab.
+    * On the left menu, scroll down to **Secrets and variables** and click **Actions**.
     * Click the green **New repository secret** button.
     * **Name:** Type exactly `DISCORD_WEBHOOK_URL`
-    * **Secret:** Paste the webhook URL you copied from Discord.
+    * **Secret:** Paste the webhook URL you just copied from Discord.
     * Click **Add secret**.
-4.  **Activate GitHub Actions:**
+4.  **Turn It On:**
     * Go to the **Actions** tab in your repository.
     * Click "I understand my workflows, go ahead and enable them."
-    * Select **PS Plus Tracker Automation** on the left menu, click the **Run workflow** dropdown on the right, and manually trigger the first run!
+    * Select **PS Plus Tracker Automation** on the left menu, click the **Run workflow** dropdown on the right, and manually run it for the first time!
 
-*Note: The script is currently set to check for updates at the top of every hour. You can change this frequency by editing the cron schedule in `.github/workflows/schedule.yml`.*
+*Note: The bot is currently set to check for new games leaving at the top of every hour. You can change how often it checks in the `.github/workflows/schedule.yml` file.*
 
-## 💻 Local Development
+## 💻 For Developers
 
-If you want to run the code locally, run tests, or contribute, follow these steps:
+If you want to run the code on your own computer, test it, or help improve it, follow these steps:
 
 ### Installation
-Make sure you have [Node.js 24+](https://nodejs.org/) installed, then install the dependencies:
+Make sure you have [Node.js 24+](https://nodejs.org/) installed, then download the required files:
 ```bash
 npm install
 ```
 
 ### Running Locally
-To test the script locally and send a payload to your webhook:
+To test the code on your computer and send a real message to your Discord:
 ```bash
 DISCORD_WEBHOOK_URL="https://discord.com/api/webhooks/your-webhook-id" npm start
 ```
 
 ### Test Mode
-If you want to test the script execution without needing to provide an actual Discord Webhook URL or send real messages:
+If you want to test the code without sending a real message to Discord:
 1. Open `index.js`.
 2. Change `const TEST_MODE = false;` to `const TEST_MODE = true;`.
 3. Run `npm start`.
 
-*Don't forget to revert `TEST_MODE` back to `false` before pushing to GitHub!*
+*Don't forget to change `TEST_MODE` back to `false` before saving your changes to GitHub!*
 
 ### Running Tests
-The project uses the native Node.js test runner to ensure data parsing and formatting logic remains stable. To run the test suite:
+To run the automated tests to make sure everything is working correctly:
 ```bash
 npm test
 ```
 
 ## 🛠️ Built With
-* **Node.js 24** - Runtime environment and native test runner (`node:test`)
-* **csv-parse** - Data extraction tool
-* **GitHub Actions** - CI/CD pipeline and task scheduler
+* **Node.js 24** - The programming language it's built in
+* **csv-parse** - Used to read the spreadsheet data
+* **GitHub Actions** - Runs the automation in the background
 
 ## 🤝 Contributing
 
-Contributions, issues, and feature requests are always welcome! If you have ideas on how to improve the code, optimize the sorting logic, or expand the embed formatting:
+Contributions, suggestions, and feedback are always welcome! If you have ideas on how to make this better:
 1. Fork the Project
 2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
 3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
@@ -86,4 +86,4 @@ Contributions, issues, and feature requests are always welcome! If you have idea
 
 ## 📝 License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+Distributed under the MIT License. See the `LICENSE` file for more information.
