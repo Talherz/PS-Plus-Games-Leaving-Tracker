@@ -113,3 +113,31 @@ test('runTracker fs.readFile error handling', async (t) => {
     assert.strictEqual(exitCode, null, 'Process should not exit on ENOENT');
   });
 });
+
+test('runTracker CSV fetch failure', async (t) => {
+  await t.test('throws and exits when CSV fetch fails', async (t) => {
+    // Mock fetch to simulate a failed network request
+    t.mock.method(global, 'fetch', async () => {
+      return {
+        ok: false,
+        status: 404,
+        statusText: 'Not Found'
+      };
+    });
+
+    let exitCode = null;
+    t.mock.method(process, 'exit', (code) => {
+      exitCode = code;
+    });
+
+    let errorMessage = null;
+    t.mock.method(console, 'error', (msg, err) => {
+      errorMessage = msg + ' ' + (err || '');
+    });
+
+    await runTracker();
+
+    assert.strictEqual(exitCode, 1);
+    assert.ok(errorMessage.includes('Failed to fetch CSV: 404 Not Found'));
+  });
+});
