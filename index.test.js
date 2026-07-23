@@ -141,3 +141,37 @@ test('runTracker CSV fetch failure', async (t) => {
     assert.ok(errorMessage.includes('Failed to fetch CSV: 404 Not Found'));
   });
 });
+
+test('runTracker Discord webhook failure', async (t) => {
+  await t.test('logs error when Discord webhook fetch fails', async (t) => {
+    // Mock fetch to succeed for CSV but fail for Discord webhook
+    t.mock.method(global, 'fetch', async (url) => {
+      if (typeof url === 'string' && url.includes('docs.google.com')) {
+        return {
+          ok: true,
+          text: async () => 'ColA,ColB,ColC,ColD,ColE,ColF,ColG,ColH,ColI,ColJ,ColK,ColL\n1,2,3,4,5,6,7,8,9,10,11,12\nTestGame,PS5,Extra,,,TBD,,,,80,,10'
+        };
+      }
+      return {
+        ok: false,
+        status: 500
+      };
+    });
+
+    // Mock fs.promises.readFile to throw an ENOENT error (file not found) to force sending discord message
+    t.mock.method(fs.promises, 'readFile', async () => {
+      const err = new Error('File not found');
+      err.code = 'ENOENT';
+      throw err;
+    });
+
+    let consoleError = null;
+    t.mock.method(console, 'error', (msg) => {
+      consoleError = msg;
+    });
+
+    await runTracker();
+
+    assert.ok(consoleError.includes('Failed to post. Discord returned code: 500'));
+  });
+});
