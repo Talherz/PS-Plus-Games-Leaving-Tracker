@@ -234,3 +234,47 @@ test('runTracker games sorting logic', async (t) => {
     assert.ok(lastTwoNames.some(name => name.includes('GameNaN')), 'GameNaN should be at the end');
   });
 });
+
+test('runTracker no updates edge case', async (t) => {
+  await t.test('does not send Discord message when there are no updates', async (t) => {
+    let fetchCalledForDiscord = false;
+
+    t.mock.method(global, 'fetch', async (url, options) => {
+      if (typeof url === 'string' && url.includes('docs.google.com')) {
+        return {
+          ok: true,
+          text: async () => 'ColA,ColB,ColC,ColD,ColE,ColF,ColG,ColH,ColI,ColJ,ColK,ColL\n1,2,3,4,5,6,7,8,9,10,11,12\nTestGame,PS5,Extra,,,TBD,,,,80,,10'
+        };
+      } else {
+        // This would be the Discord webhook call
+        fetchCalledForDiscord = true;
+        return { ok: true };
+      }
+    });
+
+    const expectedCurrentList = [{"name":"TestGame","date":"TBD","system":"PS5","tier":"Extra","mc":"80","time":"10 hrs","timeRaw":"10","timeNum":10}];
+
+    t.mock.method(fs.promises, 'readFile', async (filepath, encoding) => {
+      if (filepath === 'saved_list.json') {
+        return JSON.stringify(expectedCurrentList);
+      }
+      throw new Error('Unexpected file read');
+    });
+
+    let consoleLog = null;
+    t.mock.method(console, 'log', (msg) => {
+      consoleLog = msg;
+    });
+
+    // Make sure DISCORD_WEBHOOK_URL is set so it doesn't fail fast if it were to send (though it shouldn't)
+    const originalDiscordWebhookUrl = process.env.DISCORD_WEBHOOK_URL;
+    process.env.DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/test';
+
+    await runTracker();
+
+    process.env.DISCORD_WEBHOOK_URL = originalDiscordWebhookUrl;
+
+    assert.strictEqual(fetchCalledForDiscord, false, 'Discord webhook should not be called');
+    assert.strictEqual(consoleLog, 'No new updates to the sheet. No message sent.');
+  });
+});
