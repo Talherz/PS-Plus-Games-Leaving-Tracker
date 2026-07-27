@@ -175,3 +175,62 @@ test('runTracker Discord webhook failure', async (t) => {
     assert.ok(consoleError.includes('Failed to post. Discord returned code: 500'));
   });
 });
+
+test('runTracker games sorting logic', async (t) => {
+  await t.test('sorts games by completion time ascending, putting NaN at the end', async (t) => {
+    let capturedPayload = null;
+
+    t.mock.method(global, 'fetch', async (url, options) => {
+      if (typeof url === 'string' && url.includes('docs.google.com')) {
+        return {
+          ok: true,
+          // Column L is index 11 (ColL in this mock header)
+          text: async () => 'ColA,ColB,ColC,ColD,ColE,ColF,ColG,ColH,ColI,ColJ,ColK,ColL\n' +
+            '1,2,3,4,5,6,7,8,9,10,11,12\n' +
+            'GameUnknown,PS5,Extra,,,TBD,,,,80,,\n' +
+            'Game50,PS5,Extra,,,TBD,,,,80,,50\n' +
+            'Game10,PS5,Extra,,,TBD,,,,80,,10\n' +
+            'GameNaN,PS5,Extra,,,TBD,,,,80,,TBD\n' +
+            'Game25,PS5,Extra,,,TBD,,,,80,,25\n'
+        };
+      } else if (url === process.env.DISCORD_WEBHOOK_URL || options) {
+        capturedPayload = JSON.parse(options.body);
+        return { ok: true };
+      }
+    });
+
+    // Mock fs.promises.readFile to force sending a discord message
+    t.mock.method(fs.promises, 'readFile', async () => {
+      const err = new Error('File not found');
+      err.code = 'ENOENT';
+      throw err;
+    });
+
+    // Mock fs.promises.writeFile to avoid actually writing files
+    t.mock.method(fs.promises, 'writeFile', async () => {});
+
+    // We also need to set DISCORD_WEBHOOK_URL to make sure it triggers fetch for discord
+    const originalDiscordWebhookUrl = process.env.DISCORD_WEBHOOK_URL;
+    process.env.DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/test';
+
+    await runTracker();
+
+    process.env.DISCORD_WEBHOOK_URL = originalDiscordWebhookUrl;
+
+    assert.ok(capturedPayload, 'Payload was sent to Discord');
+    const fields = capturedPayload.embeds[0].fields;
+
+    // Check order of games in fields
+    assert.strictEqual(fields.length, 5);
+    assert.ok(fields[0].name.includes('Game10'), 'Game10 should be first');
+    assert.ok(fields[1].name.includes('Game25'), 'Game25 should be second');
+    assert.ok(fields[2].name.includes('Game50'), 'Game50 should be third');
+
+    // Both GameUnknown (empty completion) and GameNaN ('TBD' completion) result in NaN for timeNum.
+    // Their relative order is preserved from the original array due to stable sorting (in Node 12+) or might change,
+    // but they should both be at the end.
+    const lastTwoNames = [fields[3].name, fields[4].name];
+    assert.ok(lastTwoNames.some(name => name.includes('GameUnknown')), 'GameUnknown should be at the end');
+    assert.ok(lastTwoNames.some(name => name.includes('GameNaN')), 'GameNaN should be at the end');
+  });
+});
