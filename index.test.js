@@ -278,3 +278,58 @@ test('runTracker no updates edge case', async (t) => {
     assert.strictEqual(consoleLog, 'No new updates to the sheet. No message sent.');
   });
 });
+
+test('runTracker successful Discord webhook notification', async (t) => {
+  await t.test('posts to Discord successfully and writes to saved_list.json', async (t) => {
+    let discordFetchOptions = null;
+
+    t.mock.method(global, 'fetch', async (url, options) => {
+      if (typeof url === 'string' && url.includes('docs.google.com')) {
+        return {
+          ok: true,
+          text: async () => 'ColA,ColB,ColC,ColD,ColE,ColF,ColG,ColH,ColI,ColJ,ColK,ColL\n1,2,3,4,5,6,7,8,9,10,11,12\nSuccessGame,PS5,Extra,,,TBD,,,,80,,10'
+        };
+      } else if (url === process.env.DISCORD_WEBHOOK_URL || options) {
+        discordFetchOptions = options;
+        return { ok: true };
+      }
+    });
+
+    // Mock fs.promises.readFile to force sending a discord message
+    t.mock.method(fs.promises, 'readFile', async () => {
+      const err = new Error('File not found');
+      err.code = 'ENOENT';
+      throw err;
+    });
+
+    let writtenFilename = null;
+    let writtenData = null;
+    t.mock.method(fs.promises, 'writeFile', async (file, data) => {
+      writtenFilename = file;
+      writtenData = data;
+    });
+
+    let consoleLog = null;
+    t.mock.method(console, 'log', (msg) => {
+      consoleLog = msg;
+    });
+
+    const originalDiscordWebhookUrl = process.env.DISCORD_WEBHOOK_URL;
+    process.env.DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/test';
+
+    await runTracker();
+
+    process.env.DISCORD_WEBHOOK_URL = originalDiscordWebhookUrl;
+
+    assert.ok(discordFetchOptions, 'Fetch to Discord was called');
+    assert.strictEqual(discordFetchOptions.method, 'POST');
+    assert.strictEqual(writtenFilename, 'saved_list.json');
+    assert.ok(writtenData, 'Data was written to saved_list.json');
+
+    const parsedWrittenData = JSON.parse(writtenData);
+    assert.strictEqual(parsedWrittenData.length, 1);
+    assert.strictEqual(parsedWrittenData[0].name, 'SuccessGame');
+
+    assert.strictEqual(consoleLog, 'Message successfully posted to Discord and memory state saved.');
+  });
+});
