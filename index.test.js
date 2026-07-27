@@ -252,7 +252,7 @@ test('runTracker no updates edge case', async (t) => {
       }
     });
 
-    const expectedCurrentList = [{"name":"TestGame","date":"TBD","system":"PS5","tier":"Extra","mc":"80","time":"10 hrs","timeRaw":"10","timeNum":10}];
+    const expectedCurrentList = [{"name":"TestGame","date":"TBD","system":"PS5","tier":"Extra","mc":"80","time":"10 hrs","timeNum":10}];
 
     t.mock.method(fs.promises, 'readFile', async (filepath, encoding) => {
       if (filepath === 'saved_list.json') {
