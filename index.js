@@ -9,6 +9,9 @@ const COL_LEAVE_DATE = 5;  // Column F
 const COL_METACRITIC = 9;  // Column J
 const COL_COMPLETION = 11; // Column L
 
+// Discord Embed Configuration
+const ALERT_EMBED_COLOR = 16753920; // Alert yellow/orange
+
 // SET THIS TO true FOR TESTING, THEN BACK TO false WHEN YOU ARE DONE
 const TEST_MODE = false;
 
@@ -167,7 +170,7 @@ if (TEST_MODE || savedListString !== currentListString) {
       "title": "Games Leaving PS Plus Soon",
       "url": "https://docs.google.com/spreadsheets/d/19RorxFhWc2lHocg4c9zrVssSwZq1u2nPcpTsAvzdJQw/edit#gid=353702390",
       "description": `Here are the games leaving PS+ on **${escapeMarkdown(commonDate)}**.`,
-      "color": 16753920,
+      "color": ALERT_EMBED_COLOR,
       "fields": embedFields,
       "footer": {
         "text": "Data parsed automatically from the Master List"
