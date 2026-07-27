@@ -100,7 +100,6 @@ for (let i = 2; i < records.length; i++) {
       tier: tier,
       mc: metacritic,
       time: completion,
-      timeRaw: rawCompletion,
       timeNum: parseFloat(rawCompletion)
     });
   }
