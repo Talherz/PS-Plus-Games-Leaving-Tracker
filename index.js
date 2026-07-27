@@ -36,6 +36,7 @@ function escapeMarkdown(text) {
 }
 
 const LEAVE_DATE_REGEX = /^[a-zA-Z]+ \d{4}$/;
+const dateFormatter = new Intl.DateTimeFormat('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
 
 function formatLeaveDate(rawLeaveDate) {
   if (!rawLeaveDate || rawLeaveDate === "TBD") {
@@ -53,7 +54,7 @@ function formatLeaveDate(rawLeaveDate) {
 
   const d = new Date(cleanDate);
   if (!isNaN(d.getTime())) {
-    return d.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+    return dateFormatter.format(d);
   }
 
   return cleanDate;
