@@ -37,10 +37,12 @@ if (require.main === module) {
 }
 const CSV_URL = "https://docs.google.com/spreadsheets/d/19RorxFhWc2lHocg4c9zrVssSwZq1u2nPcpTsAvzdJQw/export?format=csv&gid=353702390";
 
+const DISCORD_MARKDOWN_REGEX = /([\\*_~`|<>\[\]])/g;
+
 function escapeMarkdown(text) {
   if (!text) return text;
   // Escape Discord markdown characters
-  return String(text).replace(/([\\*_~`|<>\[\]])/g, '\\$1');
+  return String(text).replace(DISCORD_MARKDOWN_REGEX, '\\$1');
 }
 
 function truncateString(str, maxLength) {
