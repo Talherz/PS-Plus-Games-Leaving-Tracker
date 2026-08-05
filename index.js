@@ -186,7 +186,8 @@ if (TEST_MODE || savedListString !== currentListString) {
   const discordResponse = await fetch(DISCORD_WEBHOOK_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(payload),
+    redirect: "error"
   });
 
   if (discordResponse.ok) {
