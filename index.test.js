@@ -370,3 +370,61 @@ test('runTracker successful Discord webhook notification', async (t) => {
     assert.strictEqual(consoleLog, 'Message successfully posted to Discord and memory state saved.');
   });
 });
+
+test('runTracker markdown escaping', async (t) => {
+  await t.test('escapes Discord markdown characters in game names and fields', async (t) => {
+    let capturedPayload = null;
+
+    t.mock.method(global, 'fetch', async (url, options) => {
+      if (typeof url === 'string' && url.includes('docs.google.com')) {
+        return {
+          ok: true,
+          // name, system, tier, ..., metacritic, completion
+          // Game Name (Col A), System (Col B), Tier (Col C), ... Metacritic (Col J), Completion (Col L)
+          text: async () => 'ColA,ColB,ColC,ColD,ColE,ColF,ColG,ColH,ColI,ColJ,ColK,ColL\n' +
+            '1,2,3,4,5,6,7,8,9,10,11,12\n' +
+            '*Markdown_Game~[1]`,_PS5*,~Extra~,,,TBD,,,,*80*,,~10~'
+        };
+      } else if (url === process.env.DISCORD_WEBHOOK_URL || options) {
+        capturedPayload = JSON.parse(options.body);
+        return { ok: true };
+      }
+    });
+
+    // Mock fs.promises.readFile to force sending a discord message
+    t.mock.method(fs.promises, 'readFile', async () => {
+      const err = new Error('File not found');
+      err.code = 'ENOENT';
+      throw err;
+    });
+
+    // Mock fs.promises.writeFile to avoid actually writing files
+    t.mock.method(fs.promises, 'writeFile', async () => {});
+
+    let consoleLog = null;
+    t.mock.method(console, 'log', (msg) => {
+      consoleLog = msg;
+    });
+
+    const originalDiscordWebhookUrl = process.env.DISCORD_WEBHOOK_URL;
+    process.env.DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/test';
+
+    await runTracker();
+
+    process.env.DISCORD_WEBHOOK_URL = originalDiscordWebhookUrl;
+
+    assert.ok(capturedPayload, 'Payload was sent to Discord');
+    const fields = capturedPayload.embeds[0].fields;
+    assert.strictEqual(fields.length, 1);
+
+    const fieldName = fields[0].name;
+    const fieldValue = fields[0].value;
+
+    // Check that markdown chars are escaped
+    assert.ok(fieldName.includes('\\*Markdown\\_Game\\~\\[1\\]\\`'), 'Game name should have escaped markdown chars');
+    assert.ok(fieldValue.includes('\\_PS5\\*'), 'System should be escaped');
+    assert.ok(fieldValue.includes('\\~Extra\\~'), 'Tier should be escaped');
+    assert.ok(fieldValue.includes('\\*80\\*'), 'Metacritic should be escaped');
+    assert.ok(fieldValue.includes('\\~10\\~ hrs'), 'Completion time should be escaped');
+  });
+});
