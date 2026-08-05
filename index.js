@@ -25,8 +25,13 @@ if (require.main === module) {
     process.exit(1);
   }
 
-  if (!DISCORD_WEBHOOK_URL.startsWith("https://discord.com/api/webhooks/")) {
-    console.error("FATAL ERROR: Invalid Discord Webhook URL provided. Must start with 'https://discord.com/api/webhooks/'.");
+  try {
+    const parsedUrl = new URL(DISCORD_WEBHOOK_URL);
+    if (parsedUrl.protocol !== "https:" || parsedUrl.hostname !== "discord.com" || !parsedUrl.pathname.startsWith("/api/webhooks/")) {
+      throw new Error();
+    }
+  } catch (err) {
+    console.error("FATAL ERROR: Invalid Discord Webhook URL provided. Must be a valid 'https://discord.com/api/webhooks/' URL.");
     process.exit(1);
   }
 }
