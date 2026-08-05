@@ -43,6 +43,13 @@ function escapeMarkdown(text) {
   return String(text).replace(/([\\*_~`|<>\[\]])/g, '\\$1');
 }
 
+function truncateString(str, maxLength) {
+  if (str.length > maxLength) {
+    return str.substring(0, maxLength - 3) + '...';
+  }
+  return str;
+}
+
 const LEAVE_DATE_REGEX = /^[a-zA-Z]+ \d{4}$/;
 const dateFormatter = new Intl.DateTimeFormat('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
 
@@ -151,15 +158,8 @@ if (TEST_MODE || savedListString !== currentListString) {
   for (let j = 0; j < leavingGamesData.length && j < 25; j++) {
     const game = leavingGamesData[j];
 
-    let fieldName = `**${escapeMarkdown(game.name)}**`;
-    if (fieldName.length > 256) {
-      fieldName = fieldName.substring(0, 253) + '...';
-    }
-
-    let fieldValue = `Platform: ${escapeMarkdown(game.system)} • Tier: ${escapeMarkdown(game.tier)}\nMetacritic: ${escapeMarkdown(game.mc)} • Completion: ${escapeMarkdown(game.time)}`;
-    if (fieldValue.length > 1024) {
-      fieldValue = fieldValue.substring(0, 1021) + '...';
-    }
+    const fieldName = truncateString(`**${escapeMarkdown(game.name)}**`, 256);
+    const fieldValue = truncateString(`Platform: ${escapeMarkdown(game.system)} • Tier: ${escapeMarkdown(game.tier)}\nMetacritic: ${escapeMarkdown(game.mc)} • Completion: ${escapeMarkdown(game.time)}`, 1024);
 
     embedFields.push({
       "name": fieldName,
