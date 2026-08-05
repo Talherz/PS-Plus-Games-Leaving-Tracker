@@ -279,6 +279,43 @@ test('runTracker no updates edge case', async (t) => {
   });
 });
 
+test('runTracker empty games list edge case', async (t) => {
+  await t.test('returns early without reading file or posting to Discord when games list is empty', async (t) => {
+    let fetchCalledForDiscord = false;
+    let readFileCalled = false;
+
+    t.mock.method(global, 'fetch', async (url, options) => {
+      if (typeof url === 'string' && url.includes('docs.google.com')) {
+        return {
+          ok: true,
+          text: async () => 'ColA,ColB,ColC,ColD,ColE,ColF,ColG,ColH,ColI,ColJ,ColK,ColL\n1,2,3,4,5,6,7,8,9,10,11,12'
+        };
+      } else {
+        fetchCalledForDiscord = true;
+        return { ok: true };
+      }
+    });
+
+    t.mock.method(fs.promises, 'readFile', async () => {
+      readFileCalled = true;
+      const err = new Error('File not found');
+      err.code = 'ENOENT';
+      throw err;
+    });
+
+    let writeFileCalled = false;
+    t.mock.method(fs.promises, 'writeFile', async () => {
+      writeFileCalled = true;
+    });
+
+    await runTracker();
+
+    assert.strictEqual(readFileCalled, false, 'fs.promises.readFile should not be called');
+    assert.strictEqual(fetchCalledForDiscord, false, 'Discord webhook should not be called');
+    assert.strictEqual(writeFileCalled, false, 'fs.promises.writeFile should not be called');
+  });
+});
+
 test('runTracker successful Discord webhook notification', async (t) => {
   await t.test('posts to Discord successfully and writes to saved_list.json', async (t) => {
     let discordFetchOptions = null;
