@@ -2,6 +2,49 @@ const { test } = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
 const { formatLeaveDate, runTracker } = require('./index.js');
+const { execSync } = require('child_process');
+
+test('Discord Webhook URL validation', async (t) => {
+  const runWithUrl = (url) => {
+    try {
+      execSync(`DISCORD_WEBHOOK_URL="${url}" node index.js`, { stdio: 'pipe' });
+      return true;
+    } catch (err) {
+      const stderr = err.stderr ? err.stderr.toString() : '';
+      if (stderr.includes("FATAL ERROR: Invalid Discord Webhook URL provided.")) {
+        return false;
+      }
+      // If it failed for another reason (e.g. fetch failed because of a mocked or invalid real CSV), we consider the URL validation passed if it didn't output the invalid URL error.
+      // But actually, running the full script might cause real network requests.
+      // We can just rely on the error output.
+      return true;
+    }
+  };
+
+  await t.test('rejects missing URL', () => {
+    try {
+      execSync(`node index.js`, { stdio: 'pipe', env: { ...process.env, DISCORD_WEBHOOK_URL: '' } });
+      assert.fail('Should have failed');
+    } catch (err) {
+      assert.ok(err.stderr.toString().includes("FATAL ERROR: No Discord Webhook URL provided"));
+    }
+  });
+
+  await t.test('rejects invalid protocol', () => {
+    assert.strictEqual(runWithUrl("http://discord.com/api/webhooks/123/abc"), false);
+  });
+
+  await t.test('rejects SSRF attempts', () => {
+    assert.strictEqual(runWithUrl("https://discord.com@evil.com/api/webhooks/123"), false);
+    assert.strictEqual(runWithUrl("https://discord.com/api/webhooks@evil.com/123"), false);
+    assert.strictEqual(runWithUrl("https://evil.com/api/webhooks/123"), false);
+    assert.strictEqual(runWithUrl("https://discord.com/api/webhooks/../../evil.com"), false);
+  });
+
+  await t.test('accepts valid URL', () => {
+    assert.strictEqual(runWithUrl("https://discord.com/api/webhooks/123/abc"), true);
+  });
+});
 
 test('formatLeaveDate', async (t) => {
   await t.test('handles null, undefined, and empty string', () => {
