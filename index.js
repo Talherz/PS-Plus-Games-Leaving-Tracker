@@ -96,27 +96,27 @@ for (let i = 2; i < records.length; i++) {
   const row = records[i];
   const gameName = row[COL_GAME_NAME]; // Column A
   
-  if (gameName && gameName.trim() !== "") {
-    const system = row[COL_SYSTEM] ? row[COL_SYSTEM].trim() : "N/A";     // Column B
-    const tier = row[COL_TIER] ? row[COL_TIER].trim() : "N/A";       // Column C
-    const rawLeaveDate = row[COL_LEAVE_DATE] ? row[COL_LEAVE_DATE].trim() : "TBD"; // Column F
-    const metacritic = row[COL_METACRITIC] ? row[COL_METACRITIC].trim() : "N/A"; // Column J
-    const rawCompletion = row[COL_COMPLETION] ? row[COL_COMPLETION].trim() : ""; // Column L
+  if (!gameName || gameName.trim() === "") continue;
 
-    const leaveDate = formatLeaveDate(rawLeaveDate);
-    
-    const completion = rawCompletion ? `${rawCompletion} hrs` : "Unknown";
+  const system = row[COL_SYSTEM] ? row[COL_SYSTEM].trim() : "N/A";     // Column B
+  const tier = row[COL_TIER] ? row[COL_TIER].trim() : "N/A";       // Column C
+  const rawLeaveDate = row[COL_LEAVE_DATE] ? row[COL_LEAVE_DATE].trim() : "TBD"; // Column F
+  const metacritic = row[COL_METACRITIC] ? row[COL_METACRITIC].trim() : "N/A"; // Column J
+  const rawCompletion = row[COL_COMPLETION] ? row[COL_COMPLETION].trim() : ""; // Column L
 
-    leavingGamesData.push({
-      name: gameName.trim(),
-      date: leaveDate,
-      system: system,
-      tier: tier,
-      mc: metacritic,
-      time: completion,
-      timeNum: parseFloat(rawCompletion)
-    });
-  }
+  const leaveDate = formatLeaveDate(rawLeaveDate);
+
+  const completion = rawCompletion ? `${rawCompletion} hrs` : "Unknown";
+
+  leavingGamesData.push({
+    name: gameName.trim(),
+    date: leaveDate,
+    system: system,
+    tier: tier,
+    mc: metacritic,
+    time: completion,
+    timeNum: parseFloat(rawCompletion)
+  });
 }
 
 if (leavingGamesData.length === 0) return;
