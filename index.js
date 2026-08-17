@@ -53,7 +53,7 @@ function truncateString(str, maxLength) {
   return str;
 }
 
-const LEAVE_DATE_REGEX = /^[a-zA-Z]+ \d{4}$/;
+const LEAVE_DATE_REGEX = /^[a-zA-Z]{3,9} \d{4}$/;
 const dateFormatter = new Intl.DateTimeFormat('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
 
 function formatLeaveDate(rawLeaveDate) {
