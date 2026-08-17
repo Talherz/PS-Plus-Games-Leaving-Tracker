@@ -27,7 +27,8 @@ if (require.main === module) {
 
   try {
     const parsedUrl = new URL(DISCORD_WEBHOOK_URL);
-    if (parsedUrl.protocol !== "https:" || parsedUrl.hostname !== "discord.com" || !parsedUrl.pathname.startsWith("/api/webhooks/")) {
+    const webhookPathRegex = /^\/api\/webhooks\/\d+\/[A-Za-z0-9_-]+$/;
+    if (parsedUrl.protocol !== "https:" || parsedUrl.hostname !== "discord.com" || !webhookPathRegex.test(parsedUrl.pathname)) {
       throw new Error();
     }
   } catch (err) {
