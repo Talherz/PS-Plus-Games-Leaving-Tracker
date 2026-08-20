@@ -19,14 +19,14 @@ const TEST_MODE = false;
 const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
 
 // Ensure environment variables are checked only when run directly
-if (require.main === module) {
-  if (!DISCORD_WEBHOOK_URL) {
+function validateWebhookUrl(url) {
+  if (!url) {
     console.error("FATAL ERROR: No Discord Webhook URL provided in environment variables.");
     process.exit(1);
   }
 
   try {
-    const parsedUrl = new URL(DISCORD_WEBHOOK_URL);
+    const parsedUrl = new URL(url);
     const webhookPathRegex = /^\/api\/webhooks\/\d+\/[A-Za-z0-9_-]+$/;
     if (parsedUrl.protocol !== "https:" || parsedUrl.hostname !== "discord.com" || !webhookPathRegex.test(parsedUrl.pathname)) {
       throw new Error();
@@ -191,6 +191,7 @@ async function postToDiscord(leavingGamesData) {
 }
 
 async function runTracker() {
+  validateWebhookUrl(process.env.DISCORD_WEBHOOK_URL);
   try {
     const csvText = await fetchCSV(CSV_URL);
     const leavingGamesData = parseAndTransformGames(csvText);
@@ -231,6 +232,7 @@ if (require.main === module) {
     fetchCSV,
     parseAndTransformGames,
     postToDiscord,
-    runTracker
+    runTracker,
+    validateWebhookUrl
   };
 }
