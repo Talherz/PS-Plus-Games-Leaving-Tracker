@@ -1,3 +1,4 @@
+process.env.DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/123/test';
 const { test } = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
@@ -254,7 +255,7 @@ test('runTracker games sorting logic', async (t) => {
 
     // We also need to set DISCORD_WEBHOOK_URL to make sure it triggers fetch for discord
     const originalDiscordWebhookUrl = process.env.DISCORD_WEBHOOK_URL;
-    process.env.DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/test';
+    process.env.DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/123/test';
 
     await runTracker();
 
@@ -311,7 +312,7 @@ test('runTracker no updates edge case', async (t) => {
 
     // Make sure DISCORD_WEBHOOK_URL is set so it doesn't fail fast if it were to send (though it shouldn't)
     const originalDiscordWebhookUrl = process.env.DISCORD_WEBHOOK_URL;
-    process.env.DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/test';
+    process.env.DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/123/test';
 
     await runTracker();
 
@@ -395,7 +396,7 @@ test('runTracker successful Discord webhook notification', async (t) => {
     });
 
     const originalDiscordWebhookUrl = process.env.DISCORD_WEBHOOK_URL;
-    process.env.DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/test';
+    process.env.DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/123/test';
 
     await runTracker();
 
@@ -450,7 +451,7 @@ test('runTracker markdown escaping', async (t) => {
     });
 
     const originalDiscordWebhookUrl = process.env.DISCORD_WEBHOOK_URL;
-    process.env.DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/test';
+    process.env.DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/123/test';
 
     await runTracker();
 
