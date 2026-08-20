@@ -78,83 +78,72 @@ function formatLeaveDate(rawLeaveDate) {
   return cleanDate;
 }
 
-async function runTracker() {
-try {
-const response = await fetch(CSV_URL);
-if (!response.ok) {
-  throw new Error(`Failed to fetch CSV: ${response.status} ${response.statusText}`);
+async function fetchCSV(url) {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch CSV: ${response.status} ${response.statusText}`);
+  }
+  return await response.text();
 }
-const csvText = await response.text();
 
-const records = parse(csvText, {
-  skip_empty_lines: true
-});
+function parseAndTransformGames(csvText) {
+  const records = parse(csvText, {
+    skip_empty_lines: true
+  });
 
-let leavingGamesData = [];
+  let leavingGamesData = [];
 
-// Starting loop at index 2 to skip headers
-for (let i = 2; i < records.length; i++) {
-  const row = records[i];
-  const gameName = row[COL_GAME_NAME]; // Column A
-  
-  if (gameName && gameName.trim() !== "") {
-    const system = row[COL_SYSTEM] ? row[COL_SYSTEM].trim() : "N/A";     // Column B
-    const tier = row[COL_TIER] ? row[COL_TIER].trim() : "N/A";       // Column C
-    const rawLeaveDate = row[COL_LEAVE_DATE] ? row[COL_LEAVE_DATE].trim() : "TBD"; // Column F
-    const metacritic = row[COL_METACRITIC] ? row[COL_METACRITIC].trim() : "N/A"; // Column J
-    const rawCompletion = row[COL_COMPLETION] ? row[COL_COMPLETION].trim() : ""; // Column L
-
-    const leaveDate = formatLeaveDate(rawLeaveDate);
+  // Starting loop at index 2 to skip headers
+  for (let i = 2; i < records.length; i++) {
+    const row = records[i];
+    const gameName = row[COL_GAME_NAME]; // Column A
     
-    const completion = rawCompletion ? `${rawCompletion} hrs` : "Unknown";
+    if (gameName && gameName.trim() !== "") {
+      const system = row[COL_SYSTEM] ? row[COL_SYSTEM].trim() : "N/A";     // Column B
+      const tier = row[COL_TIER] ? row[COL_TIER].trim() : "N/A";       // Column C
+      const rawLeaveDate = row[COL_LEAVE_DATE] ? row[COL_LEAVE_DATE].trim() : "TBD"; // Column F
+      const metacritic = row[COL_METACRITIC] ? row[COL_METACRITIC].trim() : "N/A"; // Column J
+      const rawCompletion = row[COL_COMPLETION] ? row[COL_COMPLETION].trim() : ""; // Column L
 
-    leavingGamesData.push({
-      name: gameName.trim(),
-      date: leaveDate,
-      system: system,
-      tier: tier,
-      mc: metacritic,
-      time: completion,
-      timeNum: parseFloat(rawCompletion)
-    });
+      const leaveDate = formatLeaveDate(rawLeaveDate);
+
+      const completion = rawCompletion ? `${rawCompletion} hrs` : "Unknown";
+
+      leavingGamesData.push({
+        name: gameName.trim(),
+        date: leaveDate,
+        system: system,
+        tier: tier,
+        mc: metacritic,
+        time: completion,
+        timeNum: parseFloat(rawCompletion)
+      });
+    }
   }
+
+  // Replicate sorting logic ascending based on raw hours
+  leavingGamesData.sort((a, b) => {
+    const timeA = a.timeNum;
+    const timeB = b.timeNum;
+
+    const isNumA = !isNaN(timeA);
+    const isNumB = !isNaN(timeB);
+
+    if (isNumA && isNumB) {
+      return timeA - timeB;
+    } else if (isNumA && !isNumB) {
+      return -1;
+    } else if (!isNumA && isNumB) {
+      return 1;
+    } else {
+      return 0;
+    }
+  });
+
+  return leavingGamesData;
 }
 
-if (leavingGamesData.length === 0) return;
-
-// Replicate sorting logic ascending based on raw hours
-leavingGamesData.sort((a, b) => {
-  const timeA = a.timeNum;
-  const timeB = b.timeNum;
-  
-  const isNumA = !isNaN(timeA);
-  const isNumB = !isNaN(timeB);
-  
-  if (isNumA && isNumB) {
-    return timeA - timeB;
-  } else if (isNumA && !isNumB) {
-    return -1; 
-  } else if (!isNumA && isNumB) {
-    return 1;  
-  } else {
-    return 0;
-  }
-});
-
-const currentListString = JSON.stringify(leavingGamesData);
-let savedListString = "";
-
-// Check local file state instead of Google PropertiesService
-try {
-  savedListString = await fsp.readFile('saved_list.json', 'utf8');
-} catch (err) {
-  if (err.code !== 'ENOENT') {
-    throw err;
-  }
-}
-
-if (TEST_MODE || savedListString !== currentListString) {
-  
+async function postToDiscord(leavingGamesData) {
   const commonDate = leavingGamesData.length > 0 ? leavingGamesData[0].date : "TBD";
   let embedFields = [];
   
@@ -194,18 +183,44 @@ if (TEST_MODE || savedListString !== currentListString) {
   });
 
   if (discordResponse.ok) {
-    await fsp.writeFile('saved_list.json', currentListString);
     console.log("Message successfully posted to Discord and memory state saved.");
   } else {
     console.error(`Failed to post. Discord returned code: ${discordResponse.status}`);
   }
-} else {
-  console.log("No new updates to the sheet. No message sent.");
+  return discordResponse.ok;
 }
-} catch (err) {
-console.error("Fatal Operational Error:", err.message);
-process.exit(1);
-}
+
+async function runTracker() {
+  try {
+    const csvText = await fetchCSV(CSV_URL);
+    const leavingGamesData = parseAndTransformGames(csvText);
+
+    if (leavingGamesData.length === 0) return;
+
+    const currentListString = JSON.stringify(leavingGamesData);
+    let savedListString = "";
+
+    // Check local file state instead of Google PropertiesService
+    try {
+      savedListString = await fsp.readFile('saved_list.json', 'utf8');
+    } catch (err) {
+      if (err.code !== 'ENOENT') {
+        throw err;
+      }
+    }
+
+    if (TEST_MODE || savedListString !== currentListString) {
+      const success = await postToDiscord(leavingGamesData);
+      if (success) {
+        await fsp.writeFile('saved_list.json', currentListString);
+      }
+    } else {
+      console.log("No new updates to the sheet. No message sent.");
+    }
+  } catch (err) {
+    console.error("Fatal Operational Error:", err.message);
+    process.exit(1);
+  }
 }
 
 if (require.main === module) {
@@ -213,6 +228,9 @@ if (require.main === module) {
 } else {
   module.exports = {
     formatLeaveDate,
+    fetchCSV,
+    parseAndTransformGames,
+    postToDiscord,
     runTracker
   };
 }
