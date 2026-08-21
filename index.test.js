@@ -527,3 +527,35 @@ test('runTracker string truncation', async (t) => {
     assert.ok(fieldValue.endsWith('...'), 'Truncated field value should end with "..."');
   });
 });
+
+test('runTracker CSV parsing failure', async (t) => {
+  await t.test('throws and exits when CSV parsing fails', async (t) => {
+    // Mock fetch to simulate a malformed CSV that throws during parsing
+    t.mock.method(global, 'fetch', async (url, options) => {
+      return {
+        ok: true,
+        text: async () => 'Col1,Col2\n"unclosed quote'
+      };
+    });
+
+    let exitCode = null;
+    t.mock.method(process, 'exit', (code) => {
+      exitCode = code;
+    });
+
+    let errorMessage = null;
+    t.mock.method(console, 'error', (msg, err) => {
+      errorMessage = msg + ' ' + (err || '');
+    });
+
+    const originalDiscordWebhookUrl = process.env.DISCORD_WEBHOOK_URL;
+    process.env.DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/123/test';
+
+    await runTracker();
+
+    process.env.DISCORD_WEBHOOK_URL = originalDiscordWebhookUrl;
+
+    assert.strictEqual(exitCode, 1);
+    assert.ok(errorMessage.includes('Quote Not Closed') || errorMessage.includes('Fatal Operational Error'), 'Should log CSV parsing error');
+  });
+});
