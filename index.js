@@ -39,11 +39,14 @@ function validateWebhookUrl(url) {
 const CSV_URL = "https://docs.google.com/spreadsheets/d/19RorxFhWc2lHocg4c9zrVssSwZq1u2nPcpTsAvzdJQw/export?format=csv&gid=353702390";
 
 const DISCORD_MARKDOWN_REGEX = /([\\*_~`|<>\[\]])/g;
+const DISCORD_MARKDOWN_TEST_REGEX = /[\\*_~`|<>\[\]]/;
 
 function escapeMarkdown(text) {
   if (!text) return text;
+  const str = String(text);
+  if (!DISCORD_MARKDOWN_TEST_REGEX.test(str)) return str;
   // Escape Discord markdown characters
-  return String(text).replace(DISCORD_MARKDOWN_REGEX, '\\$1');
+  return str.replace(DISCORD_MARKDOWN_REGEX, '\\$1');
 }
 
 function truncateString(str, maxLength) {
