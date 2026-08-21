@@ -472,3 +472,58 @@ test('runTracker markdown escaping', async (t) => {
     assert.ok(fieldValue.includes('\\~10\\~ hrs'), 'Completion time should be escaped');
   });
 });
+
+test('runTracker string truncation', async (t) => {
+  await t.test('truncates strings that exceed Discord embed field limits (256/1024)', async (t) => {
+    let capturedPayload = null;
+
+    // 256 is the limit for field name. "**" around it is 4 chars. Game name must be > 252
+    const longGameName = 'A'.repeat(300);
+    // 1024 is the limit for field value
+    const longSystem = 'B'.repeat(1000);
+
+    t.mock.method(global, 'fetch', async (url, options) => {
+      if (typeof url === 'string' && url.includes('docs.google.com')) {
+        return {
+          ok: true,
+          text: async () => 'ColA,ColB,ColC,ColD,ColE,ColF,ColG,ColH,ColI,ColJ,ColK,ColL\n' +
+            '1,2,3,4,5,6,7,8,9,10,11,12\n' +
+            `${longGameName},${longSystem},Extra,,,TBD,,,,80,,10`
+        };
+      } else if (url === process.env.DISCORD_WEBHOOK_URL || options) {
+        capturedPayload = JSON.parse(options.body);
+        return { ok: true };
+      }
+    });
+
+    t.mock.method(fs.promises, 'readFile', async () => {
+      const err = new Error('File not found');
+      err.code = 'ENOENT';
+      throw err;
+    });
+
+    t.mock.method(fs.promises, 'writeFile', async () => {});
+
+    t.mock.method(console, 'log', () => {});
+
+    const originalDiscordWebhookUrl = process.env.DISCORD_WEBHOOK_URL;
+    process.env.DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/123/test';
+
+    await runTracker();
+
+    process.env.DISCORD_WEBHOOK_URL = originalDiscordWebhookUrl;
+
+    assert.ok(capturedPayload, 'Payload was sent to Discord');
+    const fields = capturedPayload.embeds[0].fields;
+    assert.strictEqual(fields.length, 1);
+
+    const fieldName = fields[0].name;
+    const fieldValue = fields[0].value;
+
+    assert.ok(fieldName.length <= 256, `Field name length should be <= 256, but got ${fieldName.length}`);
+    assert.ok(fieldName.endsWith('...'), 'Truncated field name should end with "..."');
+
+    assert.ok(fieldValue.length <= 1024, `Field value length should be <= 1024, but got ${fieldValue.length}`);
+    assert.ok(fieldValue.endsWith('...'), 'Truncated field value should end with "..."');
+  });
+});
