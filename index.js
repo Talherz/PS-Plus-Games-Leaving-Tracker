@@ -99,9 +99,10 @@ function parseAndTransformGames(csvText) {
   // Starting loop at index 2 to skip headers
   for (let i = 2; i < records.length; i++) {
     const row = records[i];
-    const gameName = row[COL_GAME_NAME]; // Column A
+    const rawGameName = row[COL_GAME_NAME]; // Column A
+    const gameName = rawGameName ? rawGameName.trim() : "";
     
-    if (gameName && gameName.trim() !== "") {
+    if (gameName !== "") {
       const system = row[COL_SYSTEM] ? row[COL_SYSTEM].trim() : "N/A";     // Column B
       const tier = row[COL_TIER] ? row[COL_TIER].trim() : "N/A";       // Column C
       const rawLeaveDate = row[COL_LEAVE_DATE] ? row[COL_LEAVE_DATE].trim() : "TBD"; // Column F
@@ -113,7 +114,7 @@ function parseAndTransformGames(csvText) {
       const completion = rawCompletion ? `${rawCompletion} hrs` : "Unknown";
 
       leavingGamesData.push({
-        name: gameName.trim(),
+        name: gameName,
         date: leaveDate,
         system: system,
         tier: tier,
