@@ -559,3 +559,43 @@ test('runTracker CSV parsing failure', async (t) => {
     assert.ok(errorMessage.includes('Quote Not Closed') || errorMessage.includes('Fatal Operational Error'), 'Should log CSV parsing error');
   });
 });
+
+test('runTracker skips #N/A games', async (t) => {
+  await t.test('ignores rows where the game name is #N/A', async (t) => {
+    let fetchCalledForDiscord = false;
+    let readFileCalled = false;
+    let capturedPayload = null;
+
+    t.mock.method(global, 'fetch', async (url, options) => {
+      if (typeof url === 'string' && url.includes('docs.google.com')) {
+        return {
+          ok: true,
+          text: async () => 'ColA,ColB,ColC,ColD,ColE,ColF,ColG,ColH,ColI,ColJ,ColK,ColL\n' +
+            '1,2,3,4,5,6,7,8,9,10,11,12\n' +
+            '#N/A,N/A,#N/A,,,TBD,,,,#N/A,,'
+        };
+      } else {
+        fetchCalledForDiscord = true;
+        capturedPayload = JSON.parse(options.body);
+        return { ok: true };
+      }
+    });
+
+    t.mock.method(fs.promises, 'readFile', async () => {
+      readFileCalled = true;
+      const err = new Error('File not found');
+      err.code = 'ENOENT';
+      throw err;
+    });
+
+    let writeFileCalled = false;
+    t.mock.method(fs.promises, 'writeFile', async () => {
+      writeFileCalled = true;
+    });
+
+    await runTracker();
+
+    assert.strictEqual(fetchCalledForDiscord, false, 'Discord webhook should not be called');
+    assert.strictEqual(writeFileCalled, false, 'fs.promises.writeFile should not be called');
+  });
+});
