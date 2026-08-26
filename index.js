@@ -196,34 +196,43 @@ async function postToDiscord(leavingGamesData) {
   return discordResponse.ok;
 }
 
+async function readSavedState() {
+  try {
+    return await fsp.readFile('saved_list.json', 'utf8');
+  } catch (err) {
+    if (err.code !== 'ENOENT') {
+      throw err;
+    }
+    return "";
+  }
+}
+
+async function writeSavedState(data) {
+  await fsp.writeFile('saved_list.json', data);
+}
+
+async function processUpdates(leavingGamesData) {
+  if (leavingGamesData.length === 0) return;
+
+  const currentListString = JSON.stringify(leavingGamesData);
+  const savedListString = await readSavedState();
+
+  if (TEST_MODE || savedListString !== currentListString) {
+    const success = await postToDiscord(leavingGamesData);
+    if (success) {
+      await writeSavedState(currentListString);
+    }
+  } else {
+    console.log("No new updates to the sheet. No message sent.");
+  }
+}
+
 async function runTracker() {
   validateWebhookUrl(process.env.DISCORD_WEBHOOK_URL);
   try {
     const csvText = await fetchCSV(CSV_URL);
     const leavingGamesData = parseAndTransformGames(csvText);
-
-    if (leavingGamesData.length === 0) return;
-
-    const currentListString = JSON.stringify(leavingGamesData);
-    let savedListString = "";
-
-    // Check local file state instead of Google PropertiesService
-    try {
-      savedListString = await fsp.readFile('saved_list.json', 'utf8');
-    } catch (err) {
-      if (err.code !== 'ENOENT') {
-        throw err;
-      }
-    }
-
-    if (TEST_MODE || savedListString !== currentListString) {
-      const success = await postToDiscord(leavingGamesData);
-      if (success) {
-        await fsp.writeFile('saved_list.json', currentListString);
-      }
-    } else {
-      console.log("No new updates to the sheet. No message sent.");
-    }
+    await processUpdates(leavingGamesData);
   } catch (err) {
     console.error("Fatal Operational Error:", err.message);
     process.exit(1);
@@ -239,6 +248,9 @@ if (require.main === module) {
     parseAndTransformGames,
     postToDiscord,
     runTracker,
-    validateWebhookUrl
+    validateWebhookUrl,
+    readSavedState,
+    writeSavedState,
+    processUpdates
   };
 }
