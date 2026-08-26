@@ -102,7 +102,7 @@ function parseAndTransformGames(csvText) {
     const rawGameName = row[COL_GAME_NAME]; // Column A
     const gameName = rawGameName ? rawGameName.trim() : "";
     
-    if (gameName !== "") {
+    if (gameName !== "" && gameName !== "#N/A") {
       const system = row[COL_SYSTEM] ? row[COL_SYSTEM].trim() : "N/A";     // Column B
       const tier = row[COL_TIER] ? row[COL_TIER].trim() : "N/A";       // Column C
       const rawLeaveDate = row[COL_LEAVE_DATE] ? row[COL_LEAVE_DATE].trim() : "TBD"; // Column F
