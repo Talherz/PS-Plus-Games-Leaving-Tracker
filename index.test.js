@@ -599,3 +599,53 @@ test('runTracker skips #N/A games', async (t) => {
     assert.strictEqual(writeFileCalled, false, 'fs.promises.writeFile should not be called');
   });
 });
+
+test('runTracker 25 games limit', async (t) => {
+  await t.test('limits embed fields to a maximum of 25 when there are more than 25 leaving games', async (t) => {
+    let capturedPayload = null;
+    let fetchCalledForDiscord = false;
+
+    // Generate CSV data for 30 games
+    let csvData = 'ColA,ColB,ColC,ColD,ColE,ColF,ColG,ColH,ColI,ColJ,ColK,ColL\n' +
+                  '1,2,3,4,5,6,7,8,9,10,11,12\n';
+
+    for (let i = 1; i <= 30; i++) {
+      csvData += `Game${i},PS5,Extra,,,TBD,,,,80,,10\n`;
+    }
+
+    t.mock.method(global, 'fetch', async (url, options) => {
+      if (typeof url === 'string' && url.includes('docs.google.com')) {
+        return {
+          ok: true,
+          text: async () => csvData
+        };
+      } else if (url === process.env.DISCORD_WEBHOOK_URL || options) {
+        fetchCalledForDiscord = true;
+        capturedPayload = JSON.parse(options.body);
+        return { ok: true };
+      }
+    });
+
+    t.mock.method(fs.promises, 'readFile', async () => {
+      const err = new Error('File not found');
+      err.code = 'ENOENT';
+      throw err;
+    });
+
+    t.mock.method(fs.promises, 'writeFile', async () => {});
+    t.mock.method(console, 'log', () => {});
+
+    const originalDiscordWebhookUrl = process.env.DISCORD_WEBHOOK_URL;
+    process.env.DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/123/test';
+
+    await runTracker();
+
+    process.env.DISCORD_WEBHOOK_URL = originalDiscordWebhookUrl;
+
+    assert.ok(fetchCalledForDiscord, 'Discord webhook should be called');
+    assert.ok(capturedPayload, 'Payload should be sent to Discord');
+
+    const fields = capturedPayload.embeds[0].fields;
+    assert.strictEqual(fields.length, 25, 'Embed fields should be limited to 25');
+  });
+});
