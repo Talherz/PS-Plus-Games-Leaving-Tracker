@@ -82,11 +82,30 @@ function formatLeaveDate(rawLeaveDate) {
 }
 
 async function fetchCSV(url) {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch CSV: ${response.status} ${response.statusText}`);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    if (!response.ok) {
+      throw new Error(`Failed to fetch CSV: ${response.status} ${response.statusText}`);
+    }
+
+    const contentLength = response.headers.get('content-length');
+    // Limit to 5MB max (5 * 1024 * 1024 = 5242880 bytes)
+    if (contentLength && parseInt(contentLength, 10) > 5242880) {
+      throw new Error(`Response too large: ${contentLength} bytes`);
+    }
+
+    return await response.text();
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      throw new Error('Request timeout');
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
   }
-  return await response.text();
 }
 
 function parseAndTransformGames(csvText) {
@@ -181,12 +200,28 @@ async function postToDiscord(leavingGamesData) {
     }]
   };
 
-  const discordResponse = await fetch(DISCORD_WEBHOOK_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-    redirect: "error"
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+  let discordResponse;
+  try {
+    discordResponse = await fetch(DISCORD_WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      redirect: "error",
+      signal: controller.signal
+    });
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      console.error("Failed to post. Discord request timed out.");
+      return false;
+    }
+    console.error(`Failed to post. Error: ${error.message}`);
+    return false;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (discordResponse.ok) {
     console.log("Message successfully posted to Discord and memory state saved.");
