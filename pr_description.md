@@ -1,0 +1,3 @@
+🎯 **What:** The `fetchCSV` and `postToDiscord` functions lacked timeouts and response size limits, leaving the application vulnerable to Denial of Service (DoS) attacks if an external service hangs or returns an extremely large response.
+⚠️ **Risk:** Without a timeout, a hanging external request could keep the Node process running indefinitely, leading to resource exhaustion. A very large payload could lead to an Out-Of-Memory (OOM) crash.
+🛡️ **Solution:** Added an `AbortController` with a 15-second timeout to both fetch requests, and added a `Content-Length` check to `fetchCSV` to limit responses to a maximum of 5MB.

@@ -83,8 +83,7 @@ test('runTracker fs.readFile error handling', async (t) => {
   await t.test('throws and exits on non-ENOENT read error', async (t) => {
     // Mock fetch so we bypass the network request
     t.mock.method(global, 'fetch', async () => {
-      return {
-        ok: true,
+      return { ok: true, headers: { get: () => '100' },
         text: async () => 'ColA,ColB,ColC,ColD,ColE,ColF,ColG,ColH,ColI,ColJ,ColK,ColL\n1,2,3,4,5,6,7,8,9,10,11,12\nTestGame,PS5,Extra,,,TBD,,,,80,,10'
       };
     });
@@ -115,8 +114,7 @@ test('runTracker fs.readFile error handling', async (t) => {
   await t.test('ignores ENOENT read error and continues', async (t) => {
     // Mock fetch so we bypass the network request
     t.mock.method(global, 'fetch', async () => {
-      return {
-        ok: true,
+      return { ok: true, headers: { get: () => '100' },
         text: async () => 'ColA,ColB,ColC,ColD,ColE,ColF,ColG,ColH,ColI,ColJ,ColK,ColL\n1,2,3,4,5,6,7,8,9,10,11,12\nTestGame,PS5,Extra,,,TBD,,,,80,,10'
       };
     });
@@ -162,8 +160,7 @@ test('runTracker CSV fetch failure', async (t) => {
   await t.test('throws and exits when CSV fetch fails', async (t) => {
     // Mock fetch to simulate a failed network request
     t.mock.method(global, 'fetch', async () => {
-      return {
-        ok: false,
+      return { ok: false, headers: { get: () => '100' },
         status: 404,
         statusText: 'Not Found'
       };
@@ -191,13 +188,11 @@ test('runTracker Discord webhook failure', async (t) => {
     // Mock fetch to succeed for CSV but fail for Discord webhook
     t.mock.method(global, 'fetch', async (url) => {
       if (typeof url === 'string' && url.includes('docs.google.com')) {
-        return {
-          ok: true,
+        return { ok: true, headers: { get: () => '100' },
           text: async () => 'ColA,ColB,ColC,ColD,ColE,ColF,ColG,ColH,ColI,ColJ,ColK,ColL\n1,2,3,4,5,6,7,8,9,10,11,12\nTestGame,PS5,Extra,,,TBD,,,,80,,10'
         };
       }
-      return {
-        ok: false,
+      return { ok: false, headers: { get: () => '100' },
         status: 500
       };
     });
@@ -226,8 +221,7 @@ test('runTracker games sorting logic', async (t) => {
 
     t.mock.method(global, 'fetch', async (url, options) => {
       if (typeof url === 'string' && url.includes('docs.google.com')) {
-        return {
-          ok: true,
+        return { ok: true, headers: { get: () => '100' },
           // Column L is index 11 (ColL in this mock header)
           text: async () => 'ColA,ColB,ColC,ColD,ColE,ColF,ColG,ColH,ColI,ColJ,ColK,ColL\n' +
             '1,2,3,4,5,6,7,8,9,10,11,12\n' +
@@ -285,8 +279,7 @@ test('runTracker no updates edge case', async (t) => {
 
     t.mock.method(global, 'fetch', async (url, options) => {
       if (typeof url === 'string' && url.includes('docs.google.com')) {
-        return {
-          ok: true,
+        return { ok: true, headers: { get: () => '100' },
           text: async () => 'ColA,ColB,ColC,ColD,ColE,ColF,ColG,ColH,ColI,ColJ,ColK,ColL\n1,2,3,4,5,6,7,8,9,10,11,12\nTestGame,PS5,Extra,,,TBD,,,,80,,10'
         };
       } else {
@@ -330,8 +323,7 @@ test('runTracker empty games list edge case', async (t) => {
 
     t.mock.method(global, 'fetch', async (url, options) => {
       if (typeof url === 'string' && url.includes('docs.google.com')) {
-        return {
-          ok: true,
+        return { ok: true, headers: { get: () => '100' },
           text: async () => 'ColA,ColB,ColC,ColD,ColE,ColF,ColG,ColH,ColI,ColJ,ColK,ColL\n1,2,3,4,5,6,7,8,9,10,11,12'
         };
       } else {
@@ -366,8 +358,7 @@ test('runTracker successful Discord webhook notification', async (t) => {
 
     t.mock.method(global, 'fetch', async (url, options) => {
       if (typeof url === 'string' && url.includes('docs.google.com')) {
-        return {
-          ok: true,
+        return { ok: true, headers: { get: () => '100' },
           text: async () => 'ColA,ColB,ColC,ColD,ColE,ColF,ColG,ColH,ColI,ColJ,ColK,ColL\n1,2,3,4,5,6,7,8,9,10,11,12\nSuccessGame,PS5,Extra,,,TBD,,,,80,,10'
         };
       } else if (url === process.env.DISCORD_WEBHOOK_URL || options) {
@@ -421,8 +412,7 @@ test('runTracker markdown escaping', async (t) => {
 
     t.mock.method(global, 'fetch', async (url, options) => {
       if (typeof url === 'string' && url.includes('docs.google.com')) {
-        return {
-          ok: true,
+        return { ok: true, headers: { get: () => '100' },
           // name, system, tier, ..., metacritic, completion
           // Game Name (Col A), System (Col B), Tier (Col C), ... Metacritic (Col J), Completion (Col L)
           text: async () => 'ColA,ColB,ColC,ColD,ColE,ColF,ColG,ColH,ColI,ColJ,ColK,ColL\n' +
@@ -484,8 +474,7 @@ test('runTracker string truncation', async (t) => {
 
     t.mock.method(global, 'fetch', async (url, options) => {
       if (typeof url === 'string' && url.includes('docs.google.com')) {
-        return {
-          ok: true,
+        return { ok: true, headers: { get: () => '100' },
           text: async () => 'ColA,ColB,ColC,ColD,ColE,ColF,ColG,ColH,ColI,ColJ,ColK,ColL\n' +
             '1,2,3,4,5,6,7,8,9,10,11,12\n' +
             `${longGameName},${longSystem},Extra,,,TBD,,,,80,,10`
@@ -532,8 +521,7 @@ test('runTracker CSV parsing failure', async (t) => {
   await t.test('throws and exits when CSV parsing fails', async (t) => {
     // Mock fetch to simulate a malformed CSV that throws during parsing
     t.mock.method(global, 'fetch', async (url, options) => {
-      return {
-        ok: true,
+      return { ok: true, headers: { get: () => '100' },
         text: async () => 'Col1,Col2\n"unclosed quote'
       };
     });
@@ -568,8 +556,7 @@ test('runTracker skips #N/A games', async (t) => {
 
     t.mock.method(global, 'fetch', async (url, options) => {
       if (typeof url === 'string' && url.includes('docs.google.com')) {
-        return {
-          ok: true,
+        return { ok: true, headers: { get: () => '100' },
           text: async () => 'ColA,ColB,ColC,ColD,ColE,ColF,ColG,ColH,ColI,ColJ,ColK,ColL\n' +
             '1,2,3,4,5,6,7,8,9,10,11,12\n' +
             '#N/A,N/A,#N/A,,,TBD,,,,#N/A,,'
@@ -615,8 +602,7 @@ test('runTracker 25 games limit', async (t) => {
 
     t.mock.method(global, 'fetch', async (url, options) => {
       if (typeof url === 'string' && url.includes('docs.google.com')) {
-        return {
-          ok: true,
+        return { ok: true, headers: { get: () => '100' },
           text: async () => csvData
         };
       } else if (url === process.env.DISCORD_WEBHOOK_URL || options) {
@@ -647,5 +633,55 @@ test('runTracker 25 games limit', async (t) => {
 
     const fields = capturedPayload.embeds[0].fields;
     assert.strictEqual(fields.length, 25, 'Embed fields should be limited to 25');
+  });
+});
+
+
+test('fetchCSV security mitigations', async (t) => {
+  await t.test('throws an error if response is too large', async (t) => {
+    t.mock.method(global, 'fetch', async () => {
+      return {
+        ok: true,
+        headers: {
+          get: (name) => name.toLowerCase() === 'content-length' ? '10000000' : null
+        },
+        text: async () => 'huge response'
+      };
+    });
+
+    const { fetchCSV } = require('./index.js');
+    await assert.rejects(
+      async () => await fetchCSV('http://example.com'),
+      { message: 'Response too large: 10000000 bytes' }
+    );
+  });
+
+  await t.test('throws an error on timeout (AbortError)', async (t) => {
+    t.mock.method(global, 'fetch', async (url, options) => {
+      const err = new Error('The operation was aborted');
+      err.name = 'AbortError';
+      throw err;
+    });
+
+    const { fetchCSV } = require('./index.js');
+    await assert.rejects(
+      async () => await fetchCSV('http://example.com'),
+      { message: 'Request timeout' }
+    );
+  });
+});
+
+
+test('postToDiscord security mitigations', async (t) => {
+  await t.test('handles timeout (AbortError)', async (t) => {
+    t.mock.method(global, 'fetch', async (url, options) => {
+      const err = new Error('The operation was aborted');
+      err.name = 'AbortError';
+      throw err;
+    });
+
+    const { postToDiscord } = require('./index.js');
+    const result = await postToDiscord([{name: 'Test', date: 'TBD', system: 'PS5', tier: 'Extra', mc: '80', time: '10'}]);
+    assert.strictEqual(result, false, 'postToDiscord should return false on timeout');
   });
 });
