@@ -172,11 +172,25 @@ async function postToDiscord(leavingGamesData) {
   const commonDate = leavingGamesData.length > 0 ? leavingGamesData[0].date : "TBD";
   let embedFields = [];
   
+  // Calculate base embed length to prevent exceeding Discord's 6000 character limit
+  const title = "Games Leaving PS Plus Soon";
+  const description = `Here are the games leaving PS+ on **${escapeMarkdown(commonDate)}**.`;
+  const footerText = "Data parsed automatically from the Master List";
+
+  let currentEmbedLength = title.length + description.length + footerText.length;
+
   for (let j = 0; j < leavingGamesData.length && j < 25; j++) {
     const game = leavingGamesData[j];
 
     const fieldName = truncateString(`**${escapeMarkdown(game.name)}**`, 256);
     const fieldValue = truncateString(`Platform: ${escapeMarkdown(game.system)} • Tier: ${escapeMarkdown(game.tier)}\nMetacritic: ${escapeMarkdown(game.mc)} • Completion: ${escapeMarkdown(game.time)}`, 1024);
+
+    const fieldLength = fieldName.length + fieldValue.length;
+    if (currentEmbedLength + fieldLength > 6000) {
+      break;
+    }
+
+    currentEmbedLength += fieldLength;
 
     embedFields.push({
       "name": fieldName,
@@ -188,13 +202,13 @@ async function postToDiscord(leavingGamesData) {
   const payload = {
     "content": "@everyone 🚨 **PS Plus Games Leaving Update!**",
     "embeds": [{
-      "title": "Games Leaving PS Plus Soon",
+      "title": title,
       "url": "https://docs.google.com/spreadsheets/d/19RorxFhWc2lHocg4c9zrVssSwZq1u2nPcpTsAvzdJQw/edit#gid=353702390",
-      "description": `Here are the games leaving PS+ on **${escapeMarkdown(commonDate)}**.`,
+      "description": description,
       "color": ALERT_EMBED_COLOR,
       "fields": embedFields,
       "footer": {
-        "text": "Data parsed automatically from the Master List"
+        "text": footerText
       },
       "timestamp": new Date().toISOString()
     }]
