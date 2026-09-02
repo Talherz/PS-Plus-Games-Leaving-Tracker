@@ -123,11 +123,11 @@ function parseAndTransformGames(csvText) {
     const gameName = rawGameName ? rawGameName.trim() : "";
     
     if (gameName !== "" && gameName !== "#N/A") {
-      const system = row[COL_SYSTEM] ? row[COL_SYSTEM].trim() : "N/A";     // Column B
-      const tier = row[COL_TIER] ? row[COL_TIER].trim() : "N/A";       // Column C
-      const rawLeaveDate = row[COL_LEAVE_DATE] ? row[COL_LEAVE_DATE].trim() : "TBD"; // Column F
-      const metacritic = row[COL_METACRITIC] ? row[COL_METACRITIC].trim() : "N/A"; // Column J
-      const rawCompletion = row[COL_COMPLETION] ? row[COL_COMPLETION].trim() : ""; // Column L
+      const system = row[COL_SYSTEM] || "N/A";     // Column B
+      const tier = row[COL_TIER] || "N/A";       // Column C
+      const rawLeaveDate = row[COL_LEAVE_DATE] || "TBD"; // Column F
+      const metacritic = row[COL_METACRITIC] || "N/A"; // Column J
+      const rawCompletion = row[COL_COMPLETION] || ""; // Column L
 
       let leaveDate = dateCache.get(rawLeaveDate);
       if (leaveDate === undefined) {
