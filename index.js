@@ -122,31 +122,31 @@ function parseAndTransformGames(csvText) {
     const rawGameName = row[COL_GAME_NAME]; // Column A
     const gameName = rawGameName ? rawGameName.trim() : "";
     
-    if (gameName !== "" && gameName !== "#N/A") {
-      const system = row[COL_SYSTEM] || "N/A";     // Column B
-      const tier = row[COL_TIER] || "N/A";       // Column C
-      const rawLeaveDate = row[COL_LEAVE_DATE] || "TBD"; // Column F
-      const metacritic = row[COL_METACRITIC] || "N/A"; // Column J
-      const rawCompletion = row[COL_COMPLETION] || ""; // Column L
+    if (!gameName || gameName === "#N/A") continue;
 
-      let leaveDate = dateCache.get(rawLeaveDate);
-      if (leaveDate === undefined) {
-        leaveDate = formatLeaveDate(rawLeaveDate);
-        dateCache.set(rawLeaveDate, leaveDate);
-      }
+    const system = row[COL_SYSTEM] || "N/A";     // Column B
+    const tier = row[COL_TIER] || "N/A";       // Column C
+    const rawLeaveDate = row[COL_LEAVE_DATE] || "TBD"; // Column F
+    const metacritic = row[COL_METACRITIC] || "N/A"; // Column J
+    const rawCompletion = row[COL_COMPLETION] || ""; // Column L
 
-      const completion = rawCompletion ? `${rawCompletion} hrs` : "Unknown";
-
-      leavingGamesData.push({
-        name: gameName,
-        date: leaveDate,
-        system: system,
-        tier: tier,
-        mc: metacritic,
-        time: completion,
-        timeNum: parseFloat(rawCompletion)
-      });
+    let leaveDate = dateCache.get(rawLeaveDate);
+    if (leaveDate === undefined) {
+      leaveDate = formatLeaveDate(rawLeaveDate);
+      dateCache.set(rawLeaveDate, leaveDate);
     }
+
+    const completion = rawCompletion ? `${rawCompletion} hrs` : "Unknown";
+
+    leavingGamesData.push({
+      name: gameName,
+      date: leaveDate,
+      system: system,
+      tier: tier,
+      mc: metacritic,
+      time: completion,
+      timeNum: parseFloat(rawCompletion)
+    });
   }
 
   // Replicate sorting logic ascending based on raw hours
