@@ -74,7 +74,7 @@ function formatLeaveDate(rawLeaveDate) {
   }
 
   const d = new Date(cleanDate);
-  if (!isNaN(d.getTime())) {
+  if (!Number.isNaN(d.getTime())) {
     return dateFormatter.format(d);
   }
 
@@ -159,8 +159,8 @@ function compareGamesByTime(a, b) {
   const timeA = a.timeNum;
   const timeB = b.timeNum;
 
-  const isNumA = !isNaN(timeA);
-  const isNumB = !isNaN(timeB);
+  const isNumA = !Number.isNaN(timeA);
+  const isNumB = !Number.isNaN(timeB);
 
   if (isNumA && isNumB) {
     return timeA - timeB;
