@@ -2,7 +2,7 @@ process.env.DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/123/test';
 const { test } = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
-const { formatLeaveDate, runTracker } = require('./index.js');
+const { formatLeaveDate, runTracker, readSavedState } = require('./index.js');
 const { execSync } = require('child_process');
 
 test('Discord Webhook URL validation', async (t) => {
@@ -799,5 +799,46 @@ test('postToDiscord embed field limit logic', async (t) => {
     // With base text ~ 100, each field ~ 1280. 6000 / 1280 is around 4.
     assert.ok(fields.length < 25, 'Should have stopped adding fields long before 25 due to character limit');
     assert.ok(fields.length > 0, 'Should have at least 1 field');
+  });
+});
+
+test('readSavedState error handling', async (t) => {
+  await t.test('throws on non-ENOENT error', async (t) => {
+    t.mock.method(fs.promises, 'readFile', async () => {
+      const err = new Error('Permission denied');
+      err.code = 'EACCES';
+      throw err;
+    });
+
+    await assert.rejects(
+      async () => {
+        await readSavedState();
+      },
+      (err) => {
+        assert.strictEqual(err.code, 'EACCES');
+        assert.strictEqual(err.message, 'Permission denied');
+        return true;
+      }
+    );
+  });
+
+  await t.test('returns empty string on ENOENT error', async (t) => {
+    t.mock.method(fs.promises, 'readFile', async () => {
+      const err = new Error('File not found');
+      err.code = 'ENOENT';
+      throw err;
+    });
+
+    const result = await readSavedState();
+    assert.strictEqual(result, "");
+  });
+
+  await t.test('returns file contents on success', async (t) => {
+    t.mock.method(fs.promises, 'readFile', async () => {
+      return '{"some":"data"}';
+    });
+
+    const result = await readSavedState();
+    assert.strictEqual(result, '{"some":"data"}');
   });
 });
