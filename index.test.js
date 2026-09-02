@@ -728,3 +728,76 @@ test('postToDiscord security mitigations', async (t) => {
     assert.strictEqual(result, false, 'postToDiscord should return false on timeout');
   });
 });
+
+test('postToDiscord embed field limit logic', async (t) => {
+  await t.test('stops adding fields when approaching Discord 6000 char embed limit', async (t) => {
+    let capturedPayload = null;
+    let fetchCalledForDiscord = false;
+
+    // Each row generates a field name near 256 chars and a field value near 1024 chars
+    // So 25 games would be way over 6000. It should stop around 4 fields.
+    const longGameName = 'A'.repeat(300);
+    const longSystem = 'B'.repeat(1000);
+
+    let csvData = 'ColA,ColB,ColC,ColD,ColE,ColF,ColG,ColH,ColI,ColJ,ColK,ColL\n' +
+                  '1,2,3,4,5,6,7,8,9,10,11,12\n';
+
+    for (let i = 1; i <= 25; i++) {
+      csvData += `${longGameName},${longSystem},Extra,,,TBD,,,,80,,10\n`;
+    }
+
+    t.mock.method(global, 'fetch', async (url, options) => {
+      if (typeof url === 'string' && url.includes('docs.google.com')) {
+        return { ok: true, headers: { get: () => '100' },
+          text: async () => csvData
+        };
+      } else if (url === process.env.DISCORD_WEBHOOK_URL || options) {
+        fetchCalledForDiscord = true;
+        capturedPayload = JSON.parse(options.body);
+        return { ok: true };
+      }
+    });
+
+    const { fs } = require('fs');
+    const fsp = require('fs').promises;
+
+    t.mock.method(fsp, 'readFile', async () => {
+      const err = new Error('File not found');
+      err.code = 'ENOENT';
+      throw err;
+    });
+
+    t.mock.method(fsp, 'writeFile', async () => {});
+    t.mock.method(console, 'log', () => {});
+
+    const originalDiscordWebhookUrl = process.env.DISCORD_WEBHOOK_URL;
+    process.env.DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/123/test';
+
+    const { runTracker } = require('./index.js');
+    await runTracker();
+
+    process.env.DISCORD_WEBHOOK_URL = originalDiscordWebhookUrl;
+
+    const assert = require('assert');
+    assert.ok(fetchCalledForDiscord, 'Discord webhook should be called');
+    assert.ok(capturedPayload, 'Payload should be sent to Discord');
+
+    const fields = capturedPayload.embeds[0].fields;
+
+    const titleLen = capturedPayload.embeds[0].title?.length || 0;
+    const descLen = capturedPayload.embeds[0].description?.length || 0;
+    const footerLen = capturedPayload.embeds[0].footer?.text?.length || 0;
+
+    let fieldsLen = 0;
+    for (const f of fields) {
+      fieldsLen += f.name.length + f.value.length;
+    }
+
+    const totalCharCount = titleLen + descLen + footerLen + fieldsLen;
+    assert.ok(totalCharCount <= 6000, `Total embed chars should be <= 6000, but got ${totalCharCount}`);
+
+    // With base text ~ 100, each field ~ 1280. 6000 / 1280 is around 4.
+    assert.ok(fields.length < 25, 'Should have stopped adding fields long before 25 due to character limit');
+    assert.ok(fields.length > 0, 'Should have at least 1 field');
+  });
+});
