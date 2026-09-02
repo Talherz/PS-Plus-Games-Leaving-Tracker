@@ -114,6 +114,7 @@ function parseAndTransformGames(csvText) {
   });
 
   let leavingGamesData = [];
+  const dateCache = new Map();
 
   // Starting loop at index 2 to skip headers
   for (let i = 2; i < records.length; i++) {
@@ -128,7 +129,11 @@ function parseAndTransformGames(csvText) {
       const metacritic = row[COL_METACRITIC] ? row[COL_METACRITIC].trim() : "N/A"; // Column J
       const rawCompletion = row[COL_COMPLETION] ? row[COL_COMPLETION].trim() : ""; // Column L
 
-      const leaveDate = formatLeaveDate(rawLeaveDate);
+      let leaveDate = dateCache.get(rawLeaveDate);
+      if (leaveDate === undefined) {
+        leaveDate = formatLeaveDate(rawLeaveDate);
+        dateCache.set(rawLeaveDate, leaveDate);
+      }
 
       const completion = rawCompletion ? `${rawCompletion} hrs` : "Unknown";
 
