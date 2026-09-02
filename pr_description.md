@@ -1,3 +1,12 @@
-🎯 **What:** The `fetchCSV` and `postToDiscord` functions lacked timeouts and response size limits, leaving the application vulnerable to Denial of Service (DoS) attacks if an external service hangs or returns an extremely large response.
-⚠️ **Risk:** Without a timeout, a hanging external request could keep the Node process running indefinitely, leading to resource exhaustion. A very large payload could lead to an Out-Of-Memory (OOM) crash.
-🛡️ **Solution:** Added an `AbortController` with a 15-second timeout to both fetch requests, and added a `Content-Length` check to `fetchCSV` to limit responses to a maximum of 5MB.
+Title: 🧪 Test missing branch in compareGamesByTime
+
+Description:
+
+🎯 **What:**
+Added an explicit test case to handle the edge case where both objects provided to `compareGamesByTime` contain `NaN` for `timeNum`, which correctly evaluates the branch returning `0`.
+
+📊 **Coverage:**
+The branch evaluating `!isNumA && !isNumB` in `compareGamesByTime` logic was not explicitly hit during tests in a way that guaranteed branch coverage for `return 0`. By explicitly passing two elements with a `NaN` `timeNum`, we ensure coverage hits the default `else` condition.
+
+✨ **Result:**
+Overall coverage in `index.js` increases. The branch conditions for `compareGamesByTime` inside `index.js` are now properly covered and verified.

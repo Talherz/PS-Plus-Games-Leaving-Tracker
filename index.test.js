@@ -271,7 +271,50 @@ test('runTracker games sorting logic', async (t) => {
     assert.ok(lastTwoNames.some(name => name.includes('GameUnknown')), 'GameUnknown should be at the end');
     assert.ok(lastTwoNames.some(name => name.includes('GameNaN')), 'GameNaN should be at the end');
   });
+
+  await t.test('returns 0 when comparing two games that both have NaN timeNum', async (t) => {
+    let capturedPayload = null;
+
+    t.mock.method(global, 'fetch', async (url, options) => {
+      if (typeof url === 'string' && url.includes('docs.google.com')) {
+        return { ok: true, headers: { get: () => '100' },
+          text: async () => 'ColA,ColB,ColC,ColD,ColE,ColF,ColG,ColH,ColI,ColJ,ColK,ColL\n' +
+            '1,2,3,4,5,6,7,8,9,10,11,12\n' +
+            'GameUnknown1,PS5,Extra,,,TBD,,,,80,,\n' +
+            'GameUnknown2,PS5,Extra,,,TBD,,,,80,,\n'
+        };
+      } else if (url === process.env.DISCORD_WEBHOOK_URL || options) {
+        capturedPayload = JSON.parse(options.body);
+        return { ok: true };
+      }
+    });
+
+    t.mock.method(fs.promises, 'readFile', async () => {
+      const err = new Error('File not found');
+      err.code = 'ENOENT';
+      throw err;
+    });
+
+    t.mock.method(fs.promises, 'writeFile', async () => {});
+
+    const originalDiscordWebhookUrl = process.env.DISCORD_WEBHOOK_URL;
+    process.env.DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/123/test';
+
+    await runTracker();
+
+    process.env.DISCORD_WEBHOOK_URL = originalDiscordWebhookUrl;
+
+    assert.ok(capturedPayload, 'Payload was sent to Discord');
+    const fields = capturedPayload.embeds[0].fields;
+
+    assert.strictEqual(fields.length, 2);
+    // As they both evaluate to NaN, compareGamesByTime returns 0,
+    // which maintains their original order in standard stable sort.
+    assert.ok(fields[0].name.includes('GameUnknown1'), 'GameUnknown1 should be first');
+    assert.ok(fields[1].name.includes('GameUnknown2'), 'GameUnknown2 should be second');
+  });
 });
+
 
 test('runTracker no updates edge case', async (t) => {
   await t.test('does not send Discord message when there are no updates', async (t) => {
